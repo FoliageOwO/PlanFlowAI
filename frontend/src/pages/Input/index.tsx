@@ -61,6 +61,13 @@ export default function InputPage() {
       } else {
         const formData = new FormData()
         formData.append('file', file)
+        // Infer sourceType from file mime type
+        const fileType = file.type || ''
+        let sourceType = 'FILE'
+        if (fileType.startsWith('image/')) sourceType = 'IMAGE'
+        else if (fileType === 'application/pdf') sourceType = 'PDF'
+        else if (fileType.includes('wordprocessingml')) sourceType = 'DOCX'
+        formData.append('sourceType', sourceType)
         const res: any = await http.post('/inputs/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })

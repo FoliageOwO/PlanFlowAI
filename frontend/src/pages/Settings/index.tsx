@@ -31,7 +31,7 @@ export default function Settings() {
       if (isMockMode()) {
         await mockApi.updateProfile(values)
       } else {
-        await http.put('/user/profile', values)
+        await http.put('/auth/user/profile', values)
       }
       message.success('昵称修改成功')
     } catch {
