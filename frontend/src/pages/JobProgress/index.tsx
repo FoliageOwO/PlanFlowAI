@@ -1,6 +1,9 @@
 import React from 'react'
-import { Card, Progress, Steps, Button, Result, Typography, Spin } from 'antd'
-import { CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Card, Progress, Steps, Button, Result, Typography, Spin, Space, Tag } from 'antd'
+import {
+  CheckCircleOutlined, SyncOutlined, CloseCircleOutlined, FileTextOutlined,
+  ArrowLeftOutlined, RobotOutlined,
+} from '@ant-design/icons'
 import { useParams, useNavigate } from 'react-router-dom'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
@@ -9,10 +12,10 @@ import type { JobItem } from '../../services/mockData'
 const { Title, Text } = Typography
 
 const stages = [
-  { key: 'UPLOADED', label: '已上传', icon: <FileTextOutlined /> },
-  { key: 'TEXT_EXTRACTED', label: '文本提取', icon: <FileTextOutlined /> },
-  { key: 'AI_PARSING', label: 'AI 解析中', icon: <SyncOutlined spin /> },
-  { key: 'COMPLETED', label: '任务生成', icon: <CheckCircleOutlined /> },
+  { key: 'UPLOADED', label: '已上传', description: '文件已成功上传到服务器' },
+  { key: 'TEXT_EXTRACTED', label: '文本提取', description: '正在提取文件中的文字内容' },
+  { key: 'AI_PARSING', label: 'AI 解析中', description: 'AI 正在分析文本并生成任务' },
+  { key: 'COMPLETED', label: '任务生成', description: '任务已全部生成完毕' },
 ]
 
 const stageIndex: Record<string, number> = {
@@ -45,8 +48,6 @@ export default function JobProgress() {
       }
     } catch (err: any) {
       setError(err?.response?.data?.message || '获取任务状态失败')
-    } finally {
-      setLoading(false)
     }
   }, [id])
 
@@ -58,24 +59,41 @@ export default function JobProgress() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-        <Spin size="large" />
+      <div className="page-container" style={{ padding: '16px 0', maxWidth: 600, margin: '0 auto' }}>
+        <Card>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>
+              <Text style={{ color: '#999' }}>加载中...</Text>
+            </div>
+          </div>
+        </Card>
       </div>
     )
   }
 
   if (error || !job) {
     return (
-      <Result
-        status="error"
-        title="获取任务状态失败"
-        subTitle={error || '未知错误'}
-        extra={
-          <Button type="primary" onClick={() => { setLoading(true); setError(null); fetchJob() }}>
-            重试
-          </Button>
-        }
-      />
+      <div className="page-container" style={{ padding: '16px 0', maxWidth: 600, margin: '0 auto' }}>
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/input')}
+          style={{ marginBottom: 16, color: '#666' }}
+        >
+          返回输入
+        </Button>
+        <Result
+          status="error"
+          title="获取任务状态失败"
+          subTitle={error || '未知错误'}
+          extra={
+            <Button type="primary" onClick={() => { setLoading(true); setError(null); fetchJob() }}>
+              重试
+            </Button>
+          }
+        />
+      </div>
     )
   }
 
@@ -85,59 +103,145 @@ export default function JobProgress() {
 
   return (
     <div className="page-container" style={{ padding: '16px 0', maxWidth: 600, margin: '0 auto' }}>
-      <Title level={4} style={{ textAlign: 'center', marginBottom: 32 }}>任务解析进度</Title>
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => navigate('/input')}
+        style={{ marginBottom: 16, color: '#666' }}
+      >
+        返回输入
+      </Button>
 
-      <Card>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{
+          width: 56,
+          height: 56,
+          borderRadius: 14,
+          background: isFailed
+            ? 'linear-gradient(135deg, #ff4d4f, #ff7875)'
+            : isCompleted
+              ? 'linear-gradient(135deg, #52c41a, #73d13d)'
+              : 'linear-gradient(135deg, var(--primary), var(--primary-light))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 12px',
+          boxShadow: isFailed
+            ? '0 4px 12px rgba(255,77,79,0.3)'
+            : isCompleted
+              ? '0 4px 12px rgba(82,196,26,0.3)'
+              : '0 4px 12px rgba(22,119,255,0.3)',
+        }}>
+          {isFailed
+            ? <CloseCircleOutlined style={{ fontSize: 28, color: '#fff' }} />
+            : isCompleted
+              ? <CheckCircleOutlined style={{ fontSize: 28, color: '#fff' }} />
+              : <SyncOutlined spin style={{ fontSize: 28, color: '#fff' }} />
+          }
+        </div>
+        <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
+          {isFailed ? '解析失败' : isCompleted ? '解析完成' : '正在解析'}
+        </Title>
+        <Text style={{ color: '#999', fontSize: 13 }}>
+          {isFailed
+            ? job.errorMessage || '处理过程中出现错误'
+            : isCompleted
+              ? '任务已成功生成，点击下方按钮查看'
+              : '请稍候，系统正在处理您的输入'
+          }
+        </Text>
+      </div>
+
+      <Card style={{ borderRadius: 'var(--radius-lg)' }}>
+        {/* Progress bar */}
         <Progress
           percent={job.progress}
           status={isFailed ? 'exception' : isCompleted ? 'success' : 'active'}
           style={{ marginBottom: 32 }}
+          strokeColor={isFailed ? '#ff4d4f' : undefined}
+          format={(p) => `${p}%`}
         />
 
+        {/* Steps */}
         <Steps
           direction="vertical"
           current={currentIdx}
           status={isFailed ? 'error' : isCompleted ? 'finish' : 'process'}
           items={stages.map((s, idx) => ({
             title: s.label,
-            icon: idx === currentIdx && !isCompleted && !isFailed ? s.icon : undefined,
+            description: s.description,
             status: idx < currentIdx ? 'finish' : idx === currentIdx ? (isFailed ? 'error' : 'process') : 'wait',
           }))}
+          style={{ marginBottom: 16 }}
         />
 
-        {isFailed && (
-          <Result
-            status="error"
-            title="解析失败"
-            subTitle={job.errorMessage || '处理过程中出现错误'}
-            extra={
-              <Button type="primary" onClick={() => navigate('/input')}>
-                重新上传
-              </Button>
-            }
-          />
+        {/* Stage detail */}
+        {!isFailed && !isCompleted && (
+          <div style={{
+            textAlign: 'center',
+            padding: '12px 0',
+            background: '#f6f8fa',
+            borderRadius: 'var(--radius-sm)',
+          }}>
+            <Space>
+              <SyncOutlined spin style={{ color: 'var(--primary)' }} />
+              <Text style={{ color: '#666' }}>当前阶段：{job.stage}</Text>
+            </Space>
+          </div>
         )}
 
-        {isCompleted && (
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
-            <Title level={5} style={{ color: '#52c41a' }}>任务已生成</Title>
+        {/* Failed state */}
+        {isFailed && (
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
             <Button
               type="primary"
               size="large"
-              onClick={() => navigate(`/tasks/${job.taskId}`)}
+              onClick={() => navigate('/input')}
+              icon={<ArrowLeftOutlined />}
+              style={{ borderRadius: 'var(--radius-sm)' }}
             >
-              查看结果
+              重新上传
             </Button>
           </div>
         )}
 
-        {!isFailed && !isCompleted && (
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <Text type="secondary">当前阶段：{job.stage}</Text>
+        {/* Completed state */}
+        {isCompleted && (
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <Button
+              type="primary"
+              size="large"
+              icon={<CheckCircleOutlined />}
+              onClick={() => navigate(`/tasks/${job.taskId}`)}
+              style={{
+                borderRadius: 'var(--radius-sm)',
+                height: 48,
+                padding: '0 36px',
+                fontSize: 16,
+              }}
+            >
+              查看生成结果
+            </Button>
           </div>
         )}
       </Card>
+
+      {/* AI Tip */}
+      {!isFailed && !isCompleted && (
+        <Card
+          size="small"
+          style={{ marginTop: 16, background: '#f0f5ff' }}
+          bodyStyle={{ padding: '12px 16px' }}
+        >
+          <Space>
+            <RobotOutlined style={{ color: 'var(--primary)' }} />
+            <Text style={{ fontSize: 13, color: '#666' }}>
+              解析完成后，AI 会自动生成任务、检查清单和提醒规则
+            </Text>
+          </Space>
+        </Card>
+      )}
     </div>
   )
 }

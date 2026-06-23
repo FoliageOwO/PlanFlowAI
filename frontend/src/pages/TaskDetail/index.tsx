@@ -3,48 +3,50 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Card, Tag, Button, Spin, Descriptions, Collapse, Checkbox, Input,
   List, Typography, Space, message, Modal, Popconfirm, Divider, Empty,
+  Row, Col, Skeleton, Tooltip, Select, Badge
 } from 'antd'
 import {
   EditOutlined, DeleteOutlined, PlusOutlined, ArrowLeftOutlined,
   CheckCircleOutlined, SyncOutlined, ClockCircleOutlined, RobotOutlined,
   BellOutlined, FileTextOutlined, PictureOutlined, FileOutlined, AudioOutlined,
+  SendOutlined, ExclamationCircleOutlined,
+  CalendarOutlined, FlagOutlined, LinkOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/zh-cn'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { TaskItem, ChecklistItem } from '../../services/mockData'
+
+dayjs.extend(relativeTime)
+dayjs.locale('zh-cn')
 
 const { Title, Text } = Typography
 const { Panel } = Collapse
 const { TextArea } = Input
 const { confirm } = Modal
 
-const priorityColor: Record<string, string> = {
-  URGENT: 'red',
-  HIGH: 'orange',
-  MEDIUM: 'blue',
-  LOW: 'default',
+const priorityConfig: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
+  URGENT: { color: 'red', label: '紧急', icon: <ExclamationCircleOutlined /> },
+  HIGH: { color: 'orange', label: '高', icon: <FlagOutlined /> },
+  MEDIUM: { color: 'blue', label: '中', icon: <FlagOutlined /> },
+  LOW: { color: 'default', label: '低', icon: <FlagOutlined /> },
 }
 
-const statusColor: Record<string, string> = {
-  TODO: 'default',
-  DOING: 'processing',
-  DONE: 'success',
-  CANCELLED: 'default',
+const statusConfig: Record<string, { color: string; label: string }> = {
+  TODO: { color: 'default', label: '待处理' },
+  DOING: { color: 'processing', label: '进行中' },
+  DONE: { color: 'success', label: '已完成' },
+  CANCELLED: { color: 'default', label: '已取消' },
 }
 
-const statusLabels: Record<string, string> = {
-  TODO: '待处理',
-  DOING: '进行中',
-  DONE: '已完成',
-  CANCELLED: '已取消',
-}
-
-const channelLabels: Record<string, string> = {
-  IN_APP: '站内',
+const channelLabel: Record<string, string> = {
+  IN_APP: '站内通知',
   EMAIL: '邮件',
   SMS: '短信',
   WEIXIN: '微信',
+  LOCAL_APP: '本地通知',
 }
 
 const sourceIcons: Record<string, React.ReactNode> = {
@@ -105,7 +107,7 @@ export default function TaskDetail() {
   }
 
   const handleToggleCheck = (item: ChecklistItem) => {
-    const updated = checklist.map((c) =>
+    const updated = checklist.map(c =>
       c.id === item.id ? { ...c, done: !c.done } : c,
     )
     saveChecklist(updated)
@@ -129,8 +131,8 @@ export default function TaskDetail() {
       } else {
         await http.put(`/tasks/${id}`, { status })
       }
-      setTask((prev) => prev ? { ...prev, status } : prev)
-      message.success(`状态已更新为${statusLabels[status]}`)
+      setTask(prev => prev ? { ...prev, status } : prev)
+      message.success(`状态已更新为 ${statusConfig[status].label}`)
     } catch {
       message.error('更新状态失败')
     }
@@ -139,7 +141,10 @@ export default function TaskDetail() {
   const handleDelete = () => {
     confirm({
       title: '确认删除',
-      content: '确定要删除这个任务吗？',
+      content: '确定要删除这个任务吗？删除后不可恢复。',
+      okText: '确认删除',
+      okType: 'danger',
+      cancelText: '取消',
       onOk: async () => {
         try {
           if (isMockMode()) {
@@ -158,19 +163,24 @@ export default function TaskDetail() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
-        <Spin size="large" />
+      <div className="page-container" style={{ padding: '16px 0', maxWidth: 800, margin: '0 auto' }}>
+        <Skeleton active paragraph={{ rows: 1 }} style={{ marginBottom: 16 }} />
+        <Card>
+          <Skeleton active paragraph={{ rows: 6 }} />
+        </Card>
       </div>
     )
   }
 
   if (!task) {
     return (
-      <div className="page-container" style={{ padding: '16px 0' }}>
+      <div className="page-container" style={{ padding: '16px 0', maxWidth: 800, margin: '0 auto' }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tasks')} style={{ marginBottom: 16 }}>
           返回列表
         </Button>
-        <Empty description="任务不存在" />
+        <Empty description="任务不存在或已被删除">
+          <Button type="primary" onClick={() => navigate('/tasks')}>返回任务列表</Button>
+        </Empty>
       </div>
     )
   }
@@ -182,197 +192,311 @@ export default function TaskDetail() {
     CANCELLED: 'TODO',
   }
 
+  const isOverdue = dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE'
+  const checkedCount = checklist.filter(c => c.done).length
+  const priCfg = priorityConfig[task.priority]
+
   return (
-    <div className="page-container" style={{ padding: '16px 0' }}>
+    <div className="page-container" style={{ padding: '16px 0', maxWidth: 800, margin: '0 auto' }}>
       {/* Back */}
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tasks')} style={{ marginBottom: 16 }}>
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => navigate('/tasks')}
+        style={{ marginBottom: 16, color: '#666' }}
+      >
         返回列表
       </Button>
 
-      {/* Header */}
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1 }}>
-            <Space align="center" style={{ marginBottom: 8 }}>
-              <Title level={4} style={{ margin: 0 }}>{task.title}</Title>
-              <Tag color={statusColor[task.status]}>{statusLabels[task.status]}</Tag>
-              <Tag color={priorityColor[task.priority]}>{task.priority}</Tag>
+      {/* Header Section */}
+      <Card style={{ marginBottom: 16, borderRadius: 'var(--radius-lg)' }} bodyStyle={{ padding: '24px 24px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <Title level={4} style={{ margin: 0, fontSize: 20 }}>{task.title}</Title>
+              <Badge
+                status={statusConfig[task.status].color as any}
+                text={statusConfig[task.status].label}
+                style={{ fontSize: 13 }}
+              />
+            </div>
+            <Space size={12} style={{ flexWrap: 'wrap' }}>
+              <Tag color={priCfg.color} style={{ margin: 0, fontSize: 12, padding: '0 10px', lineHeight: '24px' }}>
+                {priCfg.icon} {priCfg.label}优先级
+              </Tag>
+              {isOverdue && (
+                <Tag color="red" style={{ margin: 0, fontSize: 12 }}>
+                  <ExclamationCircleOutlined /> 已过期
+                </Tag>
+              )}
+              <Text style={{ fontSize: 13, color: isOverdue ? 'var(--danger)' : '#666' }}>
+                <CalendarOutlined style={{ marginRight: 4 }} />
+                {dayjs(task.deadline).format('YYYY-MM-DD HH:mm')}
+                {isOverdue && ` (已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天)`}
+              </Text>
             </Space>
           </div>
           <Space>
-            <Button icon={<EditOutlined />} onClick={() => message.info('编辑功能开发中')}>编辑</Button>
-            <Popconfirm title="确定删除？" onConfirm={handleDelete}>
+            <Button icon={<EditOutlined />} onClick={() => message.info('编辑功能即将开放')}>
+              编辑
+            </Button>
+            <Popconfirm
+              title="确定删除这个任务？"
+              description="删除后不可恢复"
+              onConfirm={handleDelete}
+              okText="删除"
+              cancelText="取消"
+            >
               <Button danger icon={<DeleteOutlined />}>删除</Button>
             </Popconfirm>
           </Space>
         </div>
       </Card>
 
-      {/* Basic Info */}
-      <Card title="基本信息" style={{ marginBottom: 16 }} size="small">
-        <Descriptions column={{ xs: 1, sm: 2 }} size="small">
-          <Descriptions.Item label="描述">{task.description || '暂无描述'}</Descriptions.Item>
-          <Descriptions.Item label="截止时间">
-            <Text type={dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE' ? 'danger' : undefined}>
-              {dayjs(task.deadline).format('YYYY-MM-DD HH:mm')}
-              {dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE' && ' (已过期)'}
+      {/* Main Content */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={16}>
+          {/* Description */}
+          <Card title="📝 描述" style={{ marginBottom: 16 }} size="small">
+            <Text style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+              {task.description || '暂无描述'}
             </Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="优先级">
-            <Tag color={priorityColor[task.priority]}>{task.priority}</Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="预估耗时">{task.estimatedHours} 小时</Descriptions.Item>
-          <Descriptions.Item label="来源类型">
-            {sourceIcons[task.sourceType]} {task.sourceType}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
+          </Card>
 
-      {/* Source Evidence */}
-      {task.sourceEvidence && (
-        <Card style={{ marginBottom: 16 }} size="small">
-          <Collapse ghost expandIconPosition="end">
-            <Panel header="来源原文证据" key="1">
-              <Text style={{ whiteSpace: 'pre-wrap' }}>{task.sourceEvidence}</Text>
-            </Panel>
-          </Collapse>
-        </Card>
-      )}
-
-      {/* Constraints */}
-      {task.constraints.length > 0 && (
-        <Card title="约束条件" style={{ marginBottom: 16 }} size="small">
-          <Space wrap>
-            {task.constraints.map((c, i) => (
-              <Tag key={i}>{c}</Tag>
-            ))}
-          </Space>
-        </Card>
-      )}
-
-      {/* Checklist */}
-      <Card
-        title={
-          <Space>
-            <CheckCircleOutlined style={{ color: '#52c41a' }} />
-            检查清单
-            <Text style={{ fontSize: 12, color: '#999' }}>
-              ({checklist.filter((c) => c.done).length}/{checklist.length})
-            </Text>
-          </Space>
-        }
-        style={{ marginBottom: 16 }}
-        size="small"
-      >
-        <List
-          dataSource={checklist}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => handleToggleCheck(item)}
-                  icon={item.done ? <CheckCircleOutlined style={{ color: '#52c41a' }} /> : <ClockCircleOutlined />}
-                />,
-              ]}
-            >
-              <Text
-                style={{
-                  textDecoration: item.done ? 'line-through' : 'none',
-                  color: item.done ? '#999' : 'inherit',
-                }}
-              >
-                {item.text}
-              </Text>
-            </List.Item>
-          )}
-          locale={{ emptyText: <Empty description="暂无检查项" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
-        />
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <Input
-            placeholder="添加检查项"
-            value={newCheckItem}
-            onChange={(e) => setNewCheckItem(e.target.value)}
-            onPressEnter={handleAddCheckItem}
-          />
-          <Button icon={<PlusOutlined />} onClick={handleAddCheckItem} loading={savingChecklist}>
-            添加
-          </Button>
-        </div>
-      </Card>
-
-      {/* Reminders */}
-      <Card
-        title={<Space><BellOutlined /> 提醒规则</Space>}
-        style={{ marginBottom: 16 }}
-        size="small"
-      >
-        {task.reminders.length > 0 ? (
-          <List
-            dataSource={task.reminders}
-            renderItem={(reminder) => (
-              <List.Item>
-                <Space>
-                  <BellOutlined />
-                  <Text>{dayjs(reminder.time).format('MM-DD HH:mm')}</Text>
-                  <Tag>{channelLabels[reminder.channel] || reminder.channel}</Tag>
-                </Space>
-              </List.Item>
+          {/* Checklist */}
+          <Card
+            title={
+              <Space>
+                <CheckCircleOutlined style={{ color: checkedCount === checklist.length && checklist.length > 0 ? 'var(--success)' : '#999' }} />
+                <span>检查清单</span>
+                <Tag color={checkedCount === checklist.length && checklist.length > 0 ? 'success' : 'default'} style={{ fontSize: 11 }}>
+                  {checkedCount}/{checklist.length}
+                </Tag>
+              </Space>
+            }
+            style={{ marginBottom: 16 }}
+            size="small"
+          >
+            {checklist.length > 0 ? (
+              <List
+                dataSource={checklist}
+                split={false}
+                renderItem={(item, index) => (
+                  <List.Item
+                    style={{
+                      padding: '8px 0',
+                      borderBottom: '1px solid var(--border-light)',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s',
+                    }}
+                    onClick={() => handleToggleCheck(item)}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+                      <div style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 4,
+                        border: `2px solid ${item.done ? 'var(--success)' : '#d9d9d9'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: item.done ? 'var(--success)' : 'transparent',
+                        transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}>
+                        {item.done && <CheckCircleOutlined style={{ color: '#fff', fontSize: 12 }} />}
+                      </div>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 14,
+                          textDecoration: item.done ? 'line-through' : 'none',
+                          color: item.done ? '#999' : 'inherit',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {item.text}
+                      </Text>
+                    </div>
+                  </List.Item>
+                )}
+                locale={{ emptyText: <Empty description="暂无检查项" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+              />
+            ) : (
+              <Empty description="暂无检查项" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '8px 0' }} />
             )}
-          />
-        ) : (
-          <Empty description="暂无提醒" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        )}
-      </Card>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <Input
+                placeholder="添加检查项"
+                value={newCheckItem}
+                onChange={e => setNewCheckItem(e.target.value)}
+                onPressEnter={handleAddCheckItem}
+                suffix={
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddCheckItem}
+                    loading={savingChecklist}
+                    disabled={!newCheckItem.trim()}
+                  />
+                }
+              />
+            </div>
+          </Card>
 
-      {/* AI Suggestion */}
-      {task.aiSuggestion && (
-        <Card
-          title={<Space><RobotOutlined style={{ color: '#1677ff' }} /> AI 规划建议</Space>}
-          style={{ marginBottom: 16 }}
-          size="small"
-        >
-          <div style={{
-            background: '#f0f5ff',
-            borderRadius: 8,
-            padding: 16,
-            border: '1px solid #d6e4ff',
-          }}>
-            <Text>{task.aiSuggestion}</Text>
-          </div>
-        </Card>
-      )}
+          {/* Source Evidence */}
+          {task.sourceEvidence && (
+            <Card style={{ marginBottom: 16 }} size="small">
+              <Collapse ghost expandIconPosition="end">
+                <Panel
+                  header={<Space><LinkOutlined /> 来源原文证据</Space>}
+                  key="1"
+                >
+                  <div style={{
+                    background: '#f6f8fa',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: 12,
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                    whiteSpace: 'pre-wrap',
+                    color: '#555',
+                  }}>
+                    {task.sourceEvidence}
+                  </div>
+                </Panel>
+              </Collapse>
+            </Card>
+          )}
+        </Col>
 
-      {/* Action Bar */}
+        <Col xs={24} lg={8}>
+          {/* Basic Info */}
+          <Card title="📋 基本信息" style={{ marginBottom: 16 }} size="small">
+            <Descriptions column={1} size="small" colon={false}>
+              <Descriptions.Item label={<Text style={{ color: '#666' }}>优先级</Text>}>
+                <Tag color={priCfg.color}>{priCfg.label}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label={<Text style={{ color: '#666' }}>状态</Text>}>
+                <Badge status={statusConfig[task.status].color as any} text={statusConfig[task.status].label} />
+              </Descriptions.Item>
+              <Descriptions.Item label={<Text style={{ color: '#666' }}>截止时间</Text>}>
+                <Text type={isOverdue ? 'danger' : undefined} style={{ fontSize: 13 }}>
+                  {dayjs(task.deadline).format('MM-DD HH:mm')}
+                  {isOverdue && ' (已过期)'}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label={<Text style={{ color: '#666' }}>预估耗时</Text>}>
+                {task.estimatedHours} 小时
+              </Descriptions.Item>
+              <Descriptions.Item label={<Text style={{ color: '#666' }}>来源类型</Text>}>
+                <Space>
+                  {sourceIcons[task.sourceType] || <FileTextOutlined />}
+                  <Text>{task.sourceType}</Text>
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label={<Text style={{ color: '#666' }}>创建时间</Text>}>
+                <Text style={{ fontSize: 12 }}>{dayjs(task.createdAt).format('MM-DD HH:mm')}</Text>
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          {/* Constraints */}
+          {task.constraints.length > 0 && (
+            <Card title="🔒 约束条件" style={{ marginBottom: 16 }} size="small">
+              <Space wrap>
+                {task.constraints.map((c, i) => (
+                  <Tag key={i} style={{ padding: '2px 12px', fontSize: 12 }}>{c}</Tag>
+                ))}
+              </Space>
+            </Card>
+          )}
+
+          {/* Reminders */}
+          <Card
+            title={<Space><BellOutlined /> 提醒规则</Space>}
+            style={{ marginBottom: 16 }}
+            size="small"
+          >
+            {task.reminders.length > 0 ? (
+              <List
+                dataSource={task.reminders}
+                split={false}
+                renderItem={(reminder) => (
+                  <List.Item style={{ padding: '8px 0' }}>
+                    <Space>
+                      <BellOutlined style={{ color: 'var(--warning)' }} />
+                      <div>
+                        <Text style={{ fontSize: 13 }}>{dayjs(reminder.time).format('MM-DD HH:mm')}</Text>
+                        <br />
+                        <Tag style={{ fontSize: 11 }}>{channelLabel[reminder.channel] || reminder.channel}</Tag>
+                      </div>
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <Empty description="暂无提醒" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '8px 0' }} />
+            )}
+          </Card>
+
+          {/* AI Suggestion */}
+          {task.aiSuggestion && (
+            <Card
+              title={<Space><RobotOutlined style={{ color: 'var(--primary)' }} /> AI 建议</Space>}
+              size="small"
+            >
+              <div style={{
+                background: 'linear-gradient(135deg, #f0f5ff, #e6f4ff)',
+                borderRadius: 'var(--radius-sm)',
+                padding: 14,
+                border: '1px solid #d6e4ff',
+              }}>
+                <Text style={{ fontSize: 13, lineHeight: 1.7 }}>{task.aiSuggestion}</Text>
+              </div>
+            </Card>
+          )}
+        </Col>
+      </Row>
+
+      {/* Sticky Action Bar */}
       <div style={{
         position: 'sticky',
         bottom: 0,
         background: '#fff',
-        padding: '12px 16px',
-        borderTop: '1px solid #f0f0f0',
-        borderRadius: '8px 8px 0 0',
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.06)',
+        padding: '12px 20px',
+        marginTop: 16,
+        borderTop: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+        boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
       }}>
-        <Space style={{ width: '100%', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
           {task.status !== 'CANCELLED' && (
             <Button
               type={task.status === 'TODO' ? 'primary' : 'default'}
-              icon={task.status === 'DOING' ? <SyncOutlined /> : task.status === 'DONE' ? <CheckCircleOutlined /> : undefined}
+              size="large"
+              icon={task.status === 'DONE' ? <CheckCircleOutlined /> : task.status === 'DOING' ? <SyncOutlined /> : <SendOutlined />}
               onClick={() => handleChangeStatus(nextStatus[task.status])}
+              style={{ minWidth: 140 }}
             >
               {task.status === 'TODO' && '开始处理'}
               {task.status === 'DOING' && '标记完成'}
-              {task.status === 'DONE' && '已完成'}
+              {task.status === 'DONE' && '已完成 ✓'}
             </Button>
           )}
           {task.status !== 'CANCELLED' && task.status !== 'DONE' && (
-            <Button onClick={() => handleChangeStatus('CANCELLED')}>取消任务</Button>
+            <Button size="large" onClick={() => handleChangeStatus('CANCELLED')}>
+              取消任务
+            </Button>
           )}
           {task.status === 'CANCELLED' && (
-            <Button onClick={() => handleChangeStatus('TODO')}>重新打开</Button>
+            <Button type="primary" size="large" onClick={() => handleChangeStatus('TODO')}>
+              重新打开
+            </Button>
           )}
-        </Space>
+        </div>
       </div>
     </div>
   )
