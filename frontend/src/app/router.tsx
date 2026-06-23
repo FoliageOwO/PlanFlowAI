@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Spin } from 'antd'
 import { useAuthStore } from '../stores/authStore'
+import ErrorBoundary from '../components/common/ErrorBoundary'
 import AppLayout from './AppLayout'
 import AdminLayout from './AdminLayout'
 import Login from '../pages/Login'
@@ -23,7 +24,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isLoggedIn) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
-  return <>{children}</>
+  return <ErrorBoundary>{children}</ErrorBoundary>
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -31,7 +32,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   if (isLoggedIn) {
     return <Navigate to="/" replace />
   }
-  return <>{children}</>
+  return <ErrorBoundary>{children}</ErrorBoundary>
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -39,7 +40,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   if (user?.role !== 'ADMIN') {
     return <Navigate to="/" replace />
   }
-  return <>{children}</>
+  return <ErrorBoundary>{children}</ErrorBoundary>
 }
 
 function UserRoute({ children }: { children: React.ReactNode }) {
@@ -47,7 +48,15 @@ function UserRoute({ children }: { children: React.ReactNode }) {
   if (user?.role === 'ADMIN') {
     return <Navigate to="/admin" replace />
   }
-  return <>{children}</>
+  return <ErrorBoundary>{children}</ErrorBoundary>
+}
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="animate-fade-in-up">
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </div>
+  )
 }
 
 export default function AppRouter() {
@@ -67,24 +76,24 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/login" element={<PublicRoute><PageWrapper><Login /></PageWrapper></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><PageWrapper><Register /></PageWrapper></PublicRoute>} />
       {/* User routes */}
       <Route path="/" element={<ProtectedRoute><UserRoute><AppLayout /></UserRoute></ProtectedRoute>}>
-        <Route index element={<Dashboard />} />
-        <Route path="input" element={<Input />} />
-        <Route path="jobs/:id" element={<JobProgress />} />
-        <Route path="tasks" element={<TaskList />} />
-        <Route path="tasks/:id" element={<TaskDetail />} />
-        <Route path="timeline" element={<Timeline />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="settings" element={<Settings />} />
+        <Route index element={<PageWrapper><Dashboard /></PageWrapper>} />
+        <Route path="input" element={<PageWrapper><Input /></PageWrapper>} />
+        <Route path="jobs/:id" element={<PageWrapper><JobProgress /></PageWrapper>} />
+        <Route path="tasks" element={<PageWrapper><TaskList /></PageWrapper>} />
+        <Route path="tasks/:id" element={<PageWrapper><TaskDetail /></PageWrapper>} />
+        <Route path="timeline" element={<PageWrapper><Timeline /></PageWrapper>} />
+        <Route path="notifications" element={<PageWrapper><Notifications /></PageWrapper>} />
+        <Route path="settings" element={<PageWrapper><Settings /></PageWrapper>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
       {/* Admin routes */}
       <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="users" element={<AdminUsers />} />
+        <Route index element={<PageWrapper><AdminDashboard /></PageWrapper>} />
+        <Route path="users" element={<PageWrapper><AdminUsers /></PageWrapper>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>

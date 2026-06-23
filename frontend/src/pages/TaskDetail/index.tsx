@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Card, Tag, Button, Spin, Descriptions, Collapse, Checkbox, Input,
   List, Typography, Space, message, Modal, Popconfirm, Divider, Empty,
-  Row, Col, Skeleton, Tooltip, Select, Badge
+  Row, Col, Skeleton, Tooltip, Select, Badge, Form, DatePicker, InputNumber,
 } from 'antd'
 import {
   EditOutlined, DeleteOutlined, PlusOutlined, ArrowLeftOutlined,
@@ -138,6 +138,49 @@ export default function TaskDetail() {
     }
   }
 
+  const [editModalOpen, setEditModalOpen] = React.useState(false)
+  const [editForm] = Form.useForm()
+  const [savingEdit, setSavingEdit] = React.useState(false)
+
+  const handleEdit = () => {
+    if (task) {
+      editForm.setFieldsValue({
+        title: task.title,
+        description: task.description,
+        deadline: task.deadline ? dayjs(task.deadline) : undefined,
+        priority: task.priority,
+        estimatedHours: task.estimatedHours || 0,
+      })
+      setEditModalOpen(true)
+    }
+  }
+
+  const handleSaveEdit = async (values: any) => {
+    if (!task) return
+    setSavingEdit(true)
+    try {
+      const data = {
+        title: values.title,
+        description: values.description || '',
+        deadline: values.deadline ? values.deadline.format('YYYY-MM-DD HH:mm:ss') : task.deadline,
+        priority: values.priority || 'MEDIUM',
+        estimatedHours: values.estimatedHours || 0,
+      }
+      if (isMockMode()) {
+        await mockApi.updateTask(id!, data as any)
+      } else {
+        await http.put(`/tasks/${id}`, data)
+      }
+      message.success('任务已更新')
+      setEditModalOpen(false)
+      fetchTask()
+    } catch {
+      message.error('更新失败')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   const handleDelete = () => {
     confirm({
       title: '确认删除',
@@ -237,7 +280,7 @@ export default function TaskDetail() {
             </Space>
           </div>
           <Space>
-            <Button icon={<EditOutlined />} onClick={() => message.info('编辑功能即将开放')}>
+            <Button icon={<EditOutlined />} onClick={handleEdit}>
               编辑
             </Button>
             <Popconfirm
@@ -498,6 +541,50 @@ export default function TaskDetail() {
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <Modal
+        title="编辑任务"
+        open={editModalOpen}
+        onCancel={() => setEditModalOpen(false)}
+        footer={null}
+        width={560}
+        destroyOnClose
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleSaveEdit}>
+          <Form.Item name="title" label="任务标题" rules={[{ required: true, message: '请输入标题' }]}>
+            <Input placeholder="输入任务标题" size="large" />
+          </Form.Item>
+          <Form.Item name="description" label="描述">
+            <Input.TextArea rows={3} placeholder="输入任务描述（可选）" />
+          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="deadline" label="截止时间">
+                <DatePicker showTime style={{ width: '100%' }} size="large" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="priority" label="优先级">
+                <Select size="large">
+                  <Select.Option value="URGENT">🔥 紧急</Select.Option>
+                  <Select.Option value="HIGH">⚡ 高</Select.Option>
+                  <Select.Option value="MEDIUM">📌 中</Select.Option>
+                  <Select.Option value="LOW">📎 低</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item name="estimatedHours" label="预估耗时（小时）">
+            <InputNumber min={0} style={{ width: '100%' }} size="large" />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button type="primary" htmlType="submit" block size="large" loading={savingEdit}>
+              保存修改
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }
