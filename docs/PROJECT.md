@@ -1355,34 +1355,29 @@ planflow:
 
 ## 9. 开发里程碑与排期
 
-### 9.1 阶段分解（12 天）
+### 9.1 阶段分解（7 天）
 
 | 阶段 | 天数 | 内容 | 产出物 |
 |------|------|------|--------|
-| **P1** 基础工程搭建 | 2 天 | React 项目初始化、Spring Boot 项目初始化、MySQL 建库、用户注册登录、JWT、Capacitor 接入 | Web 能登录、APK 能运行、后端 JWT 可用 |
+| **P1** 基础工程搭建 | 1 天 | React 项目初始化、Spring Boot 项目初始化、MySQL 建库、用户注册登录、JWT、Capacitor 接入 | Web 能登录、APK 能运行、后端 JWT 可用 |
 | **P2** 输入源与文件上传 | 1 天 | 文本输入 API、文件上传 API、source_input 表、parse_job 表 | 提交文本/文件后生成 job |
-| **P3** OCR 与文档解析 | 2 天 | PaddleOCR 服务搭建、Spring Boot 调用 OCR、PDFBox 提取文本、Apache POI 提取 | 图片能识别文字、PDF 能提取文字 |
-| **P4** AI 解析与落库 | 2 天 | DeepSeek API 接入、Prompt 设计、JSON 解析、task/checklist/timeline/reminder 生成 | 一段文本能自动生成完整任务体系 |
-| **P5** 前端页面 | 2 天 | Dashboard、TaskList、TaskDetail、Timeline、NotificationCenter | 用户能完整操作任务 |
+| **P3** OCR 与文档解析 | 1 天 | PaddleOCR 服务搭建、Spring Boot 调用 OCR、PDFBox 提取文本、Apache POI 提取 | 图片能识别文字、PDF 能提取文字 |
+| **P4** AI 解析与落库 | 1 天 | DeepSeek API 接入、Prompt 设计、JSON 解析、task/checklist/timeline/reminder 生成 | 一段文本能自动生成完整任务体系 |
+| **P5** 前端页面 | 1 天 | Dashboard、TaskList、TaskDetail、Timeline、NotificationCenter | 用户能完整操作任务 |
 | **P6** 通知能力 | 1 天 | 站内通知定时生成、LocalNotifications 接入、提醒同步 | 到点弹通知（Web + Android） |
-| **P7** 完善与答辩 | 2 天 | 演示数据、错误处理、页面优化、文档完善、部署 | 可演示完整闭环 |
+| **P7** 完善与答辩 | 1 天 | 演示数据、错误处理、页面优化、文档完善、部署 | 可演示完整闭环 |
 
 ### 9.2 每日详细计划
 
 | 日 | 阶段 | 前端 | 后端 | OCR 服务 |
 |----|------|------|------|----------|
-| D1 | P1 | 初始化 React + Vite + Ant Design + 路由配置 | 初始化 Spring Boot + MyBatis Plus + MySQL | - |
-| D2 | P1 | 登录/注册页面、Token 存储、Axios 封装 | 完成注册/登录 API、JWT 生成与校验 | - |
-| D3 | P2 | 输入页（文本输入 + 文件上传） | 文本输入 API、文件上传 API、source_input + parse_job 表 | - |
-| D4 | P3 | 解析进度页（轮询状态 + 进度条） | PDFBox 文本提取、文本清洗 | 搭建 FastAPI + PaddleOCR |
-| D5 | P3 | - | OcrClient 调用、DocxExtract 服务 | 完善 OCR 接口、测试 |
-| D6 | P4 | - | DeepSeek 接入、Prompt 设计、JSON 解析 | - |
-| D7 | P4 | - | TaskGenerateService（生成任务 + 时间轴 + 提醒） | - |
-| D8 | P5 | Dashboard、TaskList 页 | Task/Timeline/Reminder 查询 API | - |
-| D9 | P5 | TaskDetail、Timeline 页 | - | - |
-| D10 | P6 | Notification 中心、LocalNotifications 集成 | ReminderScheduler、NotificationService | - |
-| D11 | P6 | 提醒同步逻辑、设置页 | Android 同步 API | - |
-| D12 | P7 | 页面美化、错误处理、演示数据 | 数据清洗、日志、部署脚本 | - |
+| D1 | P1 | 初始化 React + Vite + Ant Design + 路由配置 + 登录/注册页面 + Axios 封装 | 初始化 Spring Boot + MyBatis Plus + MySQL + 注册/登录 API + JWT | - |
+| D2 | P2 | 输入页（文本输入 + 文件上传） + 解析进度页 | 文本输入 API、文件上传 API、source_input + parse_job 表 | - |
+| D3 | P3 | ParseProgressPage 轮询 + 进度条 | PDFBox 文本提取 + OCR 调用 + DocxExtract | 搭建 FastAPI + PaddleOCR |
+| D4 | P4 | 对接解析结果展示 | DeepSeek 接入 + Prompt + TaskGenerateService | - |
+| D5 | P5 | Dashboard + TaskList + TaskDetail + Timeline | Task/Timeline/Reminder 查询 API | - |
+| D6 | P6 | Notification 中心 + LocalNotifications + 设置页 | ReminderScheduler + NotificationService + Android 同步 API | - |
+| D7 | P7 | 页面美化 + 错误处理 + 演示数据 | 数据清洗 + 日志 + 部署脚本 | - |
 
 ---
 
