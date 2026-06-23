@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `email` VARCHAR(255) DEFAULT NULL COMMENT '邮箱',
     `avatar_url` VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态 0-禁用 1-正常',
+    `role` VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT '角色 USER/ADMIN',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -233,3 +234,15 @@ CREATE TABLE IF NOT EXISTS `device_sync_record` (
     KEY `idx_last_sync_at` (`last_sync_at`),
     CONSTRAINT `fk_device_sync_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='设备同步记录表';
+
+-- ============================================================
+-- Seed Data: 默认账号
+-- ============================================================
+
+-- 管理员: admin / admin123
+INSERT IGNORE INTO `user` (`username`, `password_hash`, `nickname`, `role`, `status`)
+VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '管理员', 'ADMIN', 1);
+
+-- 普通用户: test / test123
+INSERT IGNORE INTO `user` (`username`, `password_hash`, `nickname`, `role`, `status`)
+VALUES ('test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '测试用户', 'USER', 1);

@@ -4,11 +4,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.planflow.common.ApiResponse;
 import com.planflow.common.ErrorCode;
 import com.planflow.entity.Task;
+import com.planflow.entity.TaskChecklistItem;
+import com.planflow.mapper.TaskChecklistItemMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,6 +20,7 @@ import java.util.Map;
 public class TaskController {
 
     private final TaskService taskService;
+    private final TaskChecklistItemMapper checklistItemMapper;
 
     @GetMapping
     public ApiResponse listTasks(
@@ -68,6 +72,7 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}")
+    @PutMapping("/{id}")
     public ApiResponse updateTask(@PathVariable Long id, @RequestBody Task updates) {
         try {
             Task updated = taskService.updateTask(id, updates);
@@ -78,6 +83,7 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}/status")
+    @PutMapping("/{id}/status")
     public ApiResponse updateTaskStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String status = body.get("status");
         if (status == null || status.isBlank()) {
@@ -99,5 +105,39 @@ public class TaskController {
         } catch (Exception e) {
             return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
         }
+    }
+
+    @PutMapping("/{id}/checklist")
+    public ApiResponse updateChecklist(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items");
+            // Delete old items
+            checklistItemMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TaskChecklistItem>()
+                    .eq(TaskChecklistItem::getTaskId, id));
+            // Insert new items
+            if (items != null) {
+                int order = 0;
+                for (Map<String, Object> item : items) {
+                    TaskChecklistItem ci = new TaskChecklistItem();
+                    ci.setUserId(taskService.getTaskById(id).getUserId());
+                    ci.setTaskId(id);
+                    ci.setContent((String) item.getOrDefault("content", ""));
+                    ci.setChecked(Boolean.TRUE.equals(item.get("checked")) ? 1 : 0);
+                    ci.setSortOrder(order++);
+                    ci.setCreatedAt(LocalDateTime.now());
+                    ci.setUpdatedAt(LocalDateTime.now());
+                    checklistItemMapper.insert(ci);
+                }
+            }
+            return ApiResponse.success();
+        } catch (Exception e) {
+            return ApiResponse.error(ErrorCode.SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/checklist")
+    public ApiResponse getChecklist(@PathVariable Long id) {
+        return ApiResponse.success(taskService.getChecklistItems(id));
     }
 }

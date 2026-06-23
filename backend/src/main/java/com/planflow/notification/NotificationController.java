@@ -41,6 +41,7 @@ public class NotificationController {
     }
 
     @PatchMapping("/read-all")
+    @PostMapping("/read-all")
     public ApiResponse markAllAsRead() {
         notificationService.markAllAsRead();
         return ApiResponse.success();
