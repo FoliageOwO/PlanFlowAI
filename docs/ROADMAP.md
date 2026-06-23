@@ -8,7 +8,7 @@
 
 | 阶段 | 名称 | 天数 | 状态 |
 |------|------|------|------|
-| **P1** | 基础工程搭建 | 1 天 | ⏳ 待开始 |
+| **P1** | 基础工程搭建 | 1 天 | 🔄 进行中（后端完成） |
 | **P2** | 输入源与文件上传 | 1 天 | ⏳ 待开始 |
 | **P3** | OCR 与文档解析 | 1 天 | ⏳ 待开始 |
 | **P4** | AI 解析与结构化落库 | 1 天 | ⏳ 待开始 |
@@ -24,15 +24,15 @@
 
 ### 后端
 
-- [ ] 初始化 Spring Boot 项目（Java 17 + Maven）
-- [ ] 配置 MyBatis Plus + MySQL 连接
-- [ ] 创建 `user` 表，实现 User 实体 + Mapper
-- [ ] 实现注册接口 `POST /api/auth/register`（BCrypt 加密）
-- [ ] 实现登录接口 `POST /api/auth/login`（JWT 生成）
-- [ ] 实现 `GET /api/auth/me` 当前用户查询
-- [ ] 配置 Spring Security + JWT 鉴权过滤器
-- [ ] 添加全局异常处理 + 统一响应格式 `ApiResponse`
-- [ ] 配置 CORS 跨域（开发环境）
+- [x] 初始化 Spring Boot 项目（Java 17 + Maven）
+- [x] 配置 MyBatis Plus + MySQL 连接
+- [x] 创建 `user` 表，实现 User 实体 + Mapper
+- [x] 实现注册接口 `POST /api/auth/register`（BCrypt 加密）
+- [x] 实现登录接口 `POST /api/auth/login`（JWT 生成）
+- [x] 实现 `GET /api/auth/me` 当前用户查询
+- [x] 配置 Spring Security + JWT 鉴权过滤器
+- [x] 添加全局异常处理 + 统一响应格式 `ApiResponse`
+- [x] 配置 CORS 跨域（开发环境）
 
 ### 前端
 
@@ -55,9 +55,9 @@
 ### 产出物
 
 ```
-✅ Web 能登录 / 注册
+✅ Web 能登录 / 注册（后端完成，待前端对接）
 ✅ 后端 JWT 鉴权可用
-✅ APK 能运行 React 页面
+✅ APK 能运行 React 页面（待前端完成）
 ```
 
 ---
@@ -307,7 +307,7 @@
 
 | 日期 | 计划任务 | 实际完成 | 备注 |
 |------|----------|----------|------|
-| D1 | P1 基础工程搭建（前后端同步推进） | - | - |
+| D1 | P1 基础工程搭建（前后端同步推进） | 后端完成：Spring Boot 项目初始化、11 张表建库脚本、JWT 认证、注册登录 API、全局异常处理、CORS 配置 | - |
 | D2 | P2 输入源 + 文件上传 | - | - |
 | D3 | P3 OCR 服务 + 文档解析 | - | - |
 | D4 | P4 AI 接入 + Prompt + 任务生成 | - | - |
