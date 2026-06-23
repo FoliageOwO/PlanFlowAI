@@ -1,12 +1,17 @@
 import React from 'react'
-import { Table, Card, Tag, Button, Input, Space, message, Typography, Switch, Spin, Empty } from 'antd'
-import { SearchOutlined, UserOutlined } from '@ant-design/icons'
+import { Table, Card, Tag, Button, Input, Space, message, Typography, Empty, Avatar, Statistic, Row, Col } from 'antd'
+import { SearchOutlined, UserOutlined, TeamOutlined, UserAddOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/zh-cn'
 import { mockApi, isMockMode } from '../../../services/mockData'
 import http from '../../../services/api'
 import type { AdminUser } from '../../../services/mockData'
 
-const { Title } = Typography
+dayjs.extend(relativeTime)
+dayjs.locale('zh-cn')
+
+const { Title, Text } = Typography
 
 const roleColor: Record<string, string> = {
   ADMIN: 'red',
@@ -57,8 +62,8 @@ export default function AdminUsers() {
       } else {
         await http.put(`/admin/users/${userId}/toggle`)
       }
-      setUsers((prev) =>
-        prev.map((u) =>
+      setUsers(prev =>
+        prev.map(u =>
           u.id === userId
             ? { ...u, status: currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' }
             : u,
@@ -72,43 +77,74 @@ export default function AdminUsers() {
     }
   }
 
+  const stats = React.useMemo(() => {
+    const total = users.length
+    const active = users.filter(u => u.status === 'ACTIVE').length
+    const admins = users.filter(u => u.role === 'ADMIN').length
+    return { total, active, disabled: total - active, admins }
+  }, [users])
+
   const columns = [
     {
-      title: '用户名',
-      dataIndex: 'username',
-      key: 'username',
-      render: (text: string) => <strong>{text}</strong>,
-    },
-    {
-      title: '昵称',
-      dataIndex: 'nickname',
-      key: 'nickname',
+      title: '用户',
+      key: 'user',
+      render: (_: unknown, record: AdminUser) => (
+        <Space>
+          <Avatar
+            size={32}
+            style={{
+              background: record.role === 'ADMIN'
+                ? 'linear-gradient(135deg, #1677ff, #4096ff)'
+                : 'linear-gradient(135deg, #52c41a, #73d13d)',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {(record.nickname || record.username)[0].toUpperCase()}
+          </Avatar>
+          <div>
+            <Text strong style={{ fontSize: 14 }}>{record.nickname}</Text>
+            <br />
+            <Text style={{ fontSize: 12, color: '#999' }}>@{record.username}</Text>
+          </div>
+        </Space>
+      ),
     },
     {
       title: '角色',
       dataIndex: 'role',
       key: 'role',
+      width: 100,
       render: (role: string) => (
-        <Tag color={roleColor[role]}>{role === 'ADMIN' ? '管理员' : '普通用户'}</Tag>
+        <Tag color={roleColor[role]} style={{ fontSize: 11 }}>
+          {role === 'ADMIN' ? '管理员' : '普通用户'}
+        </Tag>
       ),
     },
     {
       title: '注册时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (t: string) => dayjs(t).format('YYYY-MM-DD HH:mm'),
+      width: 160,
+      render: (t: string) => (
+        <Text style={{ fontSize: 12 }}>{dayjs(t).format('YYYY-MM-DD HH:mm')}</Text>
+      ),
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={statusColor[status]}>{statusLabel[status]}</Tag>
+      width: 100,
+      render: (s: string) => (
+        <Tag color={statusColor[s]} icon={s === 'ACTIVE' ? <CheckCircleOutlined /> : <StopOutlined />}>
+          {statusLabel[s]}
+        </Tag>
       ),
     },
     {
       title: '操作',
       key: 'action',
+      width: 100,
       render: (_: unknown, record: AdminUser) => (
         <Button
           type={record.status === 'ACTIVE' ? 'default' : 'primary'}
@@ -116,6 +152,7 @@ export default function AdminUsers() {
           danger={record.status === 'ACTIVE'}
           loading={toggling === record.id}
           onClick={() => handleToggleStatus(record.id, record.status)}
+          style={{ borderRadius: 'var(--radius-sm)' }}
         >
           {record.status === 'ACTIVE' ? '禁用' : '启用'}
         </Button>
@@ -124,25 +161,48 @@ export default function AdminUsers() {
   ]
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>用户管理</Title>
+    <div className="animate-fade-in">
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <Title level={4} style={{ margin: 0, marginBottom: 4 }}>👥 用户管理</Title>
+        <Text style={{ color: '#999', fontSize: 13 }}>共 {stats.total} 个用户，{stats.active} 个活跃</Text>
       </div>
 
-      <Card bodyStyle={{ padding: 12, marginBottom: 16 }}>
+      {/* Stats */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={8}>
+          <Card size="small" bodyStyle={{ padding: '12px 16px', textAlign: 'center' }}>
+            <Statistic title="总用户" value={stats.total} valueStyle={{ fontSize: 22, fontWeight: 700 }} />
+          </Card>
+        </Col>
+        <Col xs={8}>
+          <Card size="small" bodyStyle={{ padding: '12px 16px', textAlign: 'center' }}>
+            <Statistic title="活跃" value={stats.active} valueStyle={{ fontSize: 22, fontWeight: 700, color: 'var(--success)' }} />
+          </Card>
+        </Col>
+        <Col xs={8}>
+          <Card size="small" bodyStyle={{ padding: '12px 16px', textAlign: 'center' }}>
+            <Statistic title="管理员" value={stats.admins} valueStyle={{ fontSize: 22, fontWeight: 700, color: 'var(--primary)' }} />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Search */}
+      <Card bodyStyle={{ padding: 12, marginBottom: 16 }} style={{ borderRadius: 'var(--radius-md)' }}>
         <Input.Search
           placeholder="搜索用户名或昵称..."
           allowClear
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onSearch={(value) => loadUsers(value || undefined)}
+          onChange={e => setSearch(e.target.value)}
+          onSearch={value => loadUsers(value || undefined)}
           onPressEnter={() => loadUsers(search || undefined)}
           style={{ maxWidth: 400 }}
-          prefix={<SearchOutlined />}
+          prefix={<SearchOutlined style={{ color: '#999' }} />}
         />
       </Card>
 
-      <Card bodyStyle={{ padding: 0 }}>
+      {/* Table */}
+      <Card bodyStyle={{ padding: 0 }} style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
         <Table
           dataSource={users}
           columns={columns}
