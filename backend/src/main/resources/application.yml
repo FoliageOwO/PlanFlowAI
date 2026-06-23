@@ -39,9 +39,10 @@ planflow:
   jwt:
     secret: ${JWT_SECRET:planflow-default-secret-key-change-in-production-32chars}
     expiration: 86400000
-
-ai:
   ocr:
-    url: ${AI_OCR_URL:http://localhost:5000/ocr}
-  analysis:
-    url: ${AI_ANALYSIS_URL:http://localhost:5000/analyze}
+    service-url: ${OCR_SERVICE_URL:http://localhost:8000/ocr/image}
+  ai:
+    deepseek-api-key: ${DEEPSEEK_API_KEY:}
+    deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/v1}
+  upload:
+    dir: ${UPLOAD_DIR:uploads}

@@ -11,7 +11,7 @@
 | **P1** | 基础工程搭建 | 1 天 | ✅ 已完成 |
 | **P2** | 输入源与文件上传 | 1 天 | ✅ 已完成 |
 | **P3** | OCR 与文档解析 | 1 天 | ✅ 已完成 |
-| **P4** | AI 解析与结构化落库 | 1 天 | ⏳ 待开始 |
+| **P4** | AI 解析与结构化落库 | 1 天 | ✅ 后端完成 |
 | **P5** | 前端核心页面 | 1 天 | ✅ 已完成 |
 | **P6** | 通知能力 | 1 天 | ✅ 已完成（Web 前端） |
 | **P7** | 完善与答辩准备 | 1 天 | 🔄 进行中 |
@@ -69,15 +69,15 @@
 
 ### 后端
 
-- [ ] 创建 `source_input` 表 + 实体 + Mapper
-- [ ] 创建 `parse_job` 表 + 实体 + Mapper
-- [ ] 实现 `POST /api/inputs/text` 文本输入接口
-- [ ] 实现 `POST /api/inputs/upload` 文件上传接口（MultipartFile）
-- [ ] 实现文件类型校验（jpg/png/webp/pdf/docx）
-- [ ] 实现文件大小限制（20MB）
-- [ ] 保存文件到 `uploads/{userId}/{inputId}/` 目录
-- [ ] 实现 `GET /api/inputs` 输入源列表（分页）
-- [ ] 实现 `GET /api/inputs/{id}` 输入源详情
+- [x] 创建 `source_input` 表 + 实体 + Mapper
+- [x] 创建 `parse_job` 表 + 实体 + Mapper
+- [x] 实现 `POST /api/inputs/text` 文本输入接口
+- [x] 实现 `POST /api/inputs/upload` 文件上传接口（MultipartFile）
+- [x] 实现文件类型校验（jpg/png/webp/pdf/docx）
+- [x] 实现文件大小限制（20MB）
+- [x] 保存文件到 `uploads/{userId}/{inputId}/` 目录
+- [x] 实现 `GET /api/inputs` 输入源列表（分页）
+- [x] 实现 `GET /api/inputs/{id}` 输入源详情
 
 ### 前端
 
@@ -109,11 +109,11 @@
 
 ### 后端
 
-- [ ] 实现 `OcrClient`（RestTemplate 调用 OCR 服务）
-- [ ] 实现 `PdfExtractService`（PDFBox 提取文本）
-- [ ] 实现 `DocxExtractService`（Apache POI 提取文本）
-- [ ] 实现 `TextExtractService`（统一入口+文本清洗）
-- [ ] 清洗规则：去多余空白、合并断行、限制 8000 字符
+- [x] 实现 `OcrClient`（RestTemplate 调用 OCR 服务）
+- [x] 实现 `PdfExtractService`（PDFBox 提取文本）
+- [x] 实现 `DocxExtractService`（Apache POI 提取文本）
+- [x] 实现 `TextExtractService`（统一入口+文本清洗）
+- [x] 清洗规则：去多余空白、合并断行、限制 8000 字符
 
 ### 前端
 
@@ -138,18 +138,18 @@
 
 ### 后端
 
-- [ ] 实现 `AiPromptBuilder`（注入当前时间、时区、原文）
-- [ ] 实现 `DeepSeekClient`（HTTP 调用 DeepSeek API）
-- [ ] 实现 `AiResultParser`（JSON 提取、校验、标准化时间）
-- [ ] 创建 `ai_analysis_result` 表，保存解析记录
-- [ ] 实现 `TaskGenerateService`
-  - [ ] 从 AI JSON 生成 `task` 记录
-  - [ ] 从 AI JSON 生成 `task_checklist_item` 记录
-  - [ ] 从 AI JSON 生成 `timeline_event` 记录
-  - [ ] 从 AI JSON 生成 `reminder_rule` 记录
-- [ ] 实现 `ParseJobWorker`（@Scheduled，扫描 PENDING → COMPLETED）
+- [x] 实现 `AiPromptBuilder`（注入当前时间、时区、原文）
+- [x] 实现 `DeepSeekClient`（HTTP 调用 DeepSeek API）
+- [x] 实现 `AiResultParser`（JSON 提取、校验、标准化时间）
+- [x] 创建 `ai_analysis_result` 表，保存解析记录
+- [x] 实现 `TaskGenerateService`
+  - [x] 从 AI JSON 生成 `task` 记录
+  - [x] 从 AI JSON 生成 `task_checklist_item` 记录
+  - [x] 从 AI JSON 生成 `timeline_event` 记录
+  - [x] 从 AI JSON 生成 `reminder_rule` 记录
+- [x] 实现 `ParseJobWorker`（@Scheduled，扫描 PENDING → COMPLETED）
 - [ ] JSON 解析失败时自动重试一次
-- [ ] 创建 `device_sync_record` 表
+- [x] 创建 `device_sync_record` 表
 
 ### 前端
 
@@ -219,13 +219,13 @@
 
 ### 后端
 
-- [ ] 实现 `ReminderScheduler`（@Scheduled，每分钟扫描到期提醒）
-- [ ] 实现 `InAppReminderPlugin`（创建 notification 记录）
-- [ ] 创建 `notification` 表
-- [ ] 实现 `NotificationService`（CRUD + 未读计数）
-- [ ] 实现通知相关 API
-- [ ] 实现 `GET /api/reminders/pending-local`（Android 拉取）
-- [ ] 实现 `POST /api/reminders/local-sync`（上报注册结果）
+- [x] 实现 `ReminderScheduler`（@Scheduled，每分钟扫描到期提醒）
+- [x] 实现应用内通知（创建 notification 记录）
+- [x] 创建 `notification` 表
+- [x] 实现 `NotificationService`（CRUD + 未读计数）
+- [x] 实现通知相关 API
+- [x] 实现 `GET /api/reminders/pending-local`（Android 拉取）
+- [x] 实现 `POST /api/reminders/local-sync`（上报注册结果）
 
 ### 前端
 
@@ -334,7 +334,7 @@
 | D1 | P1 基础工程搭建（前后端同步推进） | 后端完成 + 前端 React 脚手架 + 登录/注册 + Axios/Zustand/路由 | - |
 | D2 | P2 输入源 + 文件上传 | 前端 InputPage（文本+文件上传 Tab）+ UploadPanel | - |
 | D3 | P3 OCR 服务 + 文档解析 | 前端 ParseProgressPage（轮询+进度条+Steps） | - |
-| D4 | P4 AI 接入 + Prompt + 任务生成 | - | - |
+| D4 | P4 AI 接入 + Prompt + 任务生成 | 后端完成：AiClient + Prompt + TaskGenerate + JobWorker | - |
 | D5 | P5 前端核心页面 | TaskList + TaskDetail + Timeline + Dashboard + Settings | - |
 | D6 | P6 通知 + Android 本地通知 | 前端 NotificationPage（Tab+角标+全部已读） | - |
 | D7 | P7 完善 + 部署 + 答辩准备 | - | - |
