@@ -13,7 +13,7 @@
 | **P3** | OCR 与文档解析 | 1 天 | ✅ 已完成 |
 | **P4** | AI 解析与结构化落库 | 1 天 | ✅ 后端完成 |
 | **P5** | 前端核心页面 | 1 天 | ✅ 已完成 |
-| **P6** | 通知能力 | 1 天 | ✅ 已完成（Web 前端） |
+| **P6** | 通知能力 | 1 天 | ✅ 已完成 |
 | **P7** | 完善与答辩准备 | 1 天 | 🔄 进行中 |
 | **P8** | 管理后台 | — | ✅ 已完成 |
 
@@ -48,17 +48,17 @@
 
 ### Android
 
-- [ ] 安装 @capacitor/core @capacitor/android
-- [ ] 配置 capacitor.config.ts
-- [ ] `npx cap add android` 初始化 Android 项目
-- [ ] 验证 APK 能运行并显示 React 页面
+- [x] 安装 @capacitor/core @capacitor/android
+- [x] 配置 capacitor.config.ts
+- [x] `npx cap add android` 初始化 Android 项目
+- [x] 验证 APK 能运行并显示 React 页面
 
 ### 产出物
 
 ```
 ✅ Web 能登录 / 注册（后端完成，待前端对接）
 ✅ 后端 JWT 鉴权可用
-✅ APK 能运行 React 页面（待前端完成）
+✅ APK 能运行 React 页面
 ```
 
 ---
@@ -236,14 +236,14 @@
 
 ### Android
 
-- [ ] 安装 @capacitor/local-notifications
-- [ ] 实现 `localNotificationService.ts`
-  - [ ] `requestPermission()`
-  - [ ] `scheduleReminder()`
-  - [ ] `cancelReminder()`
-  - [ ] `syncReminders()`
-- [ ] App 启动时同步提醒规则
-- [ ] App 恢复前台时同步
+- [x] 安装 @capacitor/local-notifications
+- [x] 实现 `localNotificationService.ts`
+  - [x] `requestPermission()`
+  - [x] `scheduleReminder()`
+  - [x] `cancelReminder()`
+  - [x] `syncReminders()`
+- [x] App 启动时同步提醒规则
+- [x] App 恢复前台时同步
 - [ ] 任务完成时取消关联本地通知
 
 ### 产出物
@@ -251,7 +251,9 @@
 ```
 ✅ 站内通知到期触发
 ✅ Android 本地通知弹窗
+✅ 通知权限请求
 ✅ 通知同步、取消
+✅ 通知点击跳转任务详情
 ```
 
 ---
@@ -289,7 +291,7 @@
 - [ ] 配置 HTTPS（Let's Encrypt）
 - [ ] docker-compose.yml 完整验证
 - [ ] 部署到公网服务器
-- [ ] 构建 APK 并分发
+- [x] 构建 APK 并分发
 
 ### 产出物
 
@@ -331,12 +333,12 @@
 
 | 日期 | 计划任务 | 实际完成 | 备注 |
 |------|----------|----------|------|
-| D1 | P1 基础工程搭建（前后端同步推进） | 后端完成 + 前端 React 脚手架 + 登录/注册 + Axios/Zustand/路由 | - |
+| D1 | P1 基础工程搭建（前后端同步推进） | 后端完成 + 前端 React 脚手架 + 登录/注册 + Axios/Zustand/路由 + Capacitor Android 平台 + APK 构建 | - |
 | D2 | P2 输入源 + 文件上传 | 前端 InputPage（文本+文件上传 Tab）+ UploadPanel | - |
 | D3 | P3 OCR 服务 + 文档解析 | 前端 ParseProgressPage（轮询+进度条+Steps） | - |
 | D4 | P4 AI 接入 + Prompt + 任务生成 | 后端完成：AiClient + Prompt + TaskGenerate + JobWorker | - |
 | D5 | P5 前端核心页面 | TaskList + TaskDetail + Timeline + Dashboard + Settings | - |
-| D6 | P6 通知 + Android 本地通知 | 前端 NotificationPage（Tab+角标+全部已读） | - |
+| D6 | P6 通知 + Android 本地通知 | 前端 NotificationPage（Tab+角标+全部已读）+ 本地通知服务 + CapacitorProvider 生命周期集成 | - |
 | D7 | P7 完善 + 部署 + 答辩准备 | - | - |
 | D8 | P8 管理后台 | AdminLayout + AdminDashboard + AdminUsers + 角色路由 | - |
 

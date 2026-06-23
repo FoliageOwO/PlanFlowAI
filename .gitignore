@@ -1,8 +1,14 @@
 # Node
 node_modules/
 frontend/dist/
-frontend/android/
 frontend/capacitor.config.json
+
+# Android: ignore build artifacts & web copies, keep native source
+frontend/android/**/build/
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/src/main/assets/public/
+*.apk
 
 # Java
 backend/target/
