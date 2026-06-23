@@ -96,7 +96,12 @@ export default function TaskDetail() {
       if (isMockMode()) {
         await mockApi.updateChecklist(id!, items)
       } else {
-        await http.put(`/tasks/${id}/checklist`, { items })
+        // Map frontend fields (text/done) to backend fields (content/checked)
+        const backendItems = items.map(item => ({
+          content: item.text,
+          checked: item.done ? 1 : 0,
+        }))
+        await http.put(`/tasks/${id}/checklist`, { items: backendItems })
       }
       setChecklist(items)
     } catch {
@@ -129,7 +134,7 @@ export default function TaskDetail() {
       if (isMockMode()) {
         await mockApi.updateTask(id!, { status })
       } else {
-        await http.put(`/tasks/${id}`, { status })
+        await http.patch(`/tasks/${id}/status`, { status })
       }
       setTask(prev => prev ? { ...prev, status } : prev)
       message.success(`状态已更新为 ${statusConfig[status].label}`)
