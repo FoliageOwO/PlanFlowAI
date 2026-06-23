@@ -1,0 +1,35 @@
+# Node
+node_modules/
+frontend/dist/
+frontend/android/
+frontend/capacitor.config.json
+
+# Java
+backend/target/
+backend/*.jar
+*.class
+
+# Python
+ocr-service/__pycache__/
+ocr-service/*.pyc
+ocr-service/venv/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.local.yml
+
+# Uploads
+uploads/
+
+# Logs
+*.log
