@@ -1,0 +1,172 @@
+package com.planflow.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.planflow.dto.AiAnalysisResultDTO;
+import com.planflow.entity.*;
+import com.planflow.repository.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TaskGenerateService {
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private final TaskMapper taskMapper;
+    private final TaskChecklistItemMapper checklistItemMapper;
+    private final TimelineEventMapper timelineEventMapper;
+    private final ReminderRuleMapper reminderRuleMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Transactional
+    public void generateFromAnalysis(Long userId, Long sourceInputId, AiAnalysisResultDTO result) {
+        log.info("Generating tasks from AI analysis: userId={}, sourceInputId={}", userId, sourceInputId);
+
+        int taskCount = 0;
+        int eventCount = 0;
+        int reminderCount = 0;
+
+        // Generate tasks
+        if (result.getTasks() != null) {
+            for (AiAnalysisResultDTO.TaskItem taskItem : result.getTasks()) {
+                Task task = new Task();
+                task.setUserId(userId);
+                task.setSourceInputId(sourceInputId);
+                task.setTitle(taskItem.getTitle());
+                task.setDescription(taskItem.getDescription());
+                task.setTaskType("AI_EXTRACTED");
+                task.setPriority(taskItem.getPriority() != null ? taskItem.getPriority().toUpperCase() : "MEDIUM");
+                task.setStatus("TODO");
+                task.setDeadline(parseDateTime(taskItem.getDeadline()));
+                task.setEstimatedMinutes(taskItem.getEstimatedMinutes());
+                task.setCreatedAt(LocalDateTime.now());
+                task.setUpdatedAt(LocalDateTime.now());
+
+                // Serialize constraints and source evidence to JSON
+                try {
+                    if (taskItem.getConstraints() != null) {
+                        task.setConstraintsJson(objectMapper.writeValueAsString(taskItem.getConstraints()));
+                    }
+                    if (taskItem.getSourceEvidence() != null) {
+                        task.setSourceEvidence(objectMapper.writeValueAsString(taskItem.getSourceEvidence()));
+                    }
+                } catch (JsonProcessingException e) {
+                    log.warn("Failed to serialize task JSON fields", e);
+                }
+
+                taskMapper.insert(task);
+                taskCount++;
+
+                // Generate checklist items
+                if (taskItem.getChecklist() != null) {
+                    int order = 0;
+                    for (String item : taskItem.getChecklist()) {
+                        TaskChecklistItem checklistItem = new TaskChecklistItem();
+                        checklistItem.setUserId(userId);
+                        checklistItem.setTaskId(task.getId());
+                        checklistItem.setContent(item);
+                        checklistItem.setChecked(0);
+                        checklistItem.setSortOrder(order++);
+                        checklistItem.setCreatedAt(LocalDateTime.now());
+                        checklistItem.setUpdatedAt(LocalDateTime.now());
+                        checklistItemMapper.insert(checklistItem);
+                    }
+                }
+
+                // Generate suggested reminders
+                if (taskItem.getSuggestedReminders() != null) {
+                    for (AiAnalysisResultDTO.SuggestedReminder sr : taskItem.getSuggestedReminders()) {
+                        ReminderRule rule = new ReminderRule();
+                        rule.setUserId(userId);
+                        rule.setTaskId(task.getId());
+                        rule.setTitle(sr.getTitle());
+                        rule.setContent(sr.getContent());
+                        rule.setRemindAt(parseDateTime(sr.getRemindAt()));
+                        rule.setChannel("IN_APP");
+                        rule.setStatus("PENDING");
+                        rule.setCreatedAt(LocalDateTime.now());
+                        rule.setUpdatedAt(LocalDateTime.now());
+                        reminderRuleMapper.insert(rule);
+                        reminderCount++;
+                    }
+                }
+
+                // Generate default reminders based on deadline
+                LocalDateTime deadline = task.getDeadline();
+                if (deadline != null) {
+                    // 1 day before deadline
+                    createDefaultReminder(userId, task.getId(), deadline.minusDays(1),
+                            "任务提醒: " + task.getTitle(), "距离截止时间还有1天", "IN_APP");
+                    // 3 hours before deadline
+                    createDefaultReminder(userId, task.getId(), deadline.minusHours(3),
+                            "任务提醒: " + task.getTitle(), "距离截止时间还有3小时", "IN_APP");
+                    // 8 AM on deadline day
+                    LocalDateTime morningRemind = LocalDateTime.of(deadline.toLocalDate(), LocalTime.of(8, 0));
+                    if (morningRemind.isAfter(LocalDateTime.now()) && morningRemind.isBefore(deadline)) {
+                        createDefaultReminder(userId, task.getId(), morningRemind,
+                                "今日任务: " + task.getTitle(), "今天是截止日期", "IN_APP");
+                    }
+                }
+            }
+        }
+
+        // Generate timeline events
+        if (result.getEvents() != null) {
+            for (AiAnalysisResultDTO.EventItem eventItem : result.getEvents()) {
+                TimelineEvent event = new TimelineEvent();
+                event.setUserId(userId);
+                event.setSourceInputId(sourceInputId);
+                event.setTitle(eventItem.getTitle());
+                event.setEventType("EVENT");
+                event.setStartTime(parseDateTime(eventItem.getStartTime()));
+                event.setEndTime(parseDateTime(eventItem.getEndTime()));
+                event.setLocation(eventItem.getLocation());
+                event.setDescription(eventItem.getDescription());
+                event.setCreatedAt(LocalDateTime.now());
+                event.setUpdatedAt(LocalDateTime.now());
+                timelineEventMapper.insert(event);
+                eventCount++;
+            }
+        }
+
+        log.info("Generated {} tasks, {} events, {} reminders", taskCount, eventCount, reminderCount);
+    }
+
+    private void createDefaultReminder(Long userId, Long taskId, LocalDateTime remindAt,
+                                        String title, String content, String channel) {
+        if (remindAt.isBefore(LocalDateTime.now())) return;
+
+        ReminderRule rule = new ReminderRule();
+        rule.setUserId(userId);
+        rule.setTaskId(taskId);
+        rule.setTitle(title);
+        rule.setContent(content);
+        rule.setRemindAt(remindAt);
+        rule.setChannel(channel);
+        rule.setStatus("PENDING");
+        rule.setCreatedAt(LocalDateTime.now());
+        rule.setUpdatedAt(LocalDateTime.now());
+        reminderRuleMapper.insert(rule);
+    }
+
+    private LocalDateTime parseDateTime(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+        try {
+            return LocalDateTime.parse(dateTimeStr, FORMATTER);
+        } catch (Exception e) {
+            log.warn("Failed to parse datetime: {}", dateTimeStr);
+            return null;
+        }
+    }
+}

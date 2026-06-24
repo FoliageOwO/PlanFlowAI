@@ -1,7 +1,7 @@
 package com.planflow.common;
 
-import com.planflow.user.User;
-import com.planflow.user.UserService;
+import com.planflow.entity.User;
+import com.planflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

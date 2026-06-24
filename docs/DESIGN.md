@@ -182,24 +182,16 @@ ParseJobWorker (@Scheduled fixedDelay=5000ms)
 ```
 com.planflow/
 │
-├── auth/           # 认证模块：注册、登录、JWT 令牌管理
-├── user/           # 用户模块：基本信息管理
-├── input/          # 输入源模块：文本提交、文件上传、输入源管理
-├── job/            # 解析任务模块：Job 状态管理、Worker 调度
-├── extract/        # 文档文本提取：PDF、DOCX 解析
-├── ocr/            # OCR 客户端：远程调用 PaddleOCR 服务
-├── ai/             # AI 模块：Prompt 构建、AI 客户端、结果解析
-├── task/           # 任务模块：任务 CRUD、AI 结果→任务生成
-├── timeline/       # 时间轴模块：事件管理
-├── reminder/       # 提醒模块：提醒规则管理、到期扫描
-├── notification/   # 通知模块：站内通知生成与管理
-├── setting/        # 用户设置模块
-├── admin/          # 管理后台：数据统计、用户管理
-├── dashboard/      # 首页数据聚合
-├── config/         # 全局配置：PlanFlowProperties、文件存储等
-├── common/         # 公共基础设施：ApiResponse、异常处理、安全工具
-├── entity/         # 数据实体（MyBatis-Plus 映射）
-└── mapper/         # 数据访问接口（MyBatis-Plus Mapper）
+├── controller/      # 控制器层：所有 REST API 入口
+├── service/         # 服务层：全部业务逻辑（含 Auth、Task、OCR 调用编排等）
+├── repository/      # 数据访问层：MyBatis-Plus Mapper 接口
+├── entity/          # 数据实体：所有数据库表映射
+├── dto/             # 数据传输对象：请求体、响应 DTO
+├── client/          # 外部客户端：AI 模型调用、OCR 服务调用
+├── scheduler/       # 定时任务：Job 轮询 Worker、提醒扫描
+├── security/        # 安全认证：JWT 令牌、鉴权过滤器
+├── config/          # 全局配置：Security、JWT、MyBatis、文件存储等
+└── common/          # 公共基础设施：ApiResponse、异常处理、安全工具
 ```
 
 ### 4.2 核心模块详述
