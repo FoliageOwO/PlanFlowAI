@@ -38,7 +38,7 @@
 
 | 层级 | 技术 |
 |------|------|
-| 前端 | React 18 + TypeScript + Vite + Ant Design 5 + Zustand |
+| 前端 | React 18 + TypeScript + Vite + shadcn/ui + Zustand |
 | 移动端 | Capacitor 6 + Local Notifications |
 | 后端 | Spring Boot 3.2 + Java 17 + MyBatis Plus + Spring Security + JWT |
 | 数据库 | MySQL 8 |

@@ -38,7 +38,7 @@
 ### 前端
 
 - [x] 初始化 React + TypeScript + Vite 项目
-- [x] 安装 Ant Design、Axios、Zustand、React Router
+- [x] 安装 shadcn/ui、Axios、Zustand、React Router
 - [x] 实现登录页 UI（表单 + 校验）
 - [x] 实现注册页 UI
 - [x] 封装 Axios 实例（baseURL + JWT 拦截器 + 401 处理）
