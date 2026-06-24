@@ -1,202 +1,105 @@
 import React from 'react'
-import { Form, Input, Button, Card, message, Typography, Steps, Space } from 'antd'
-import {
-  UserOutlined, LockOutlined, SmileOutlined,
-  CheckCircleOutlined, ArrowLeftOutlined, RobotOutlined,
-} from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
+import { Card, CardContent } from '../../components/ui/card'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-
-const { Title, Text } = Typography
-
-interface RegisterForm {
-  username: string
-  password: string
-  confirmPassword: string
-  nickname: string
-}
+import { Sparkles, User, Lock, Smile } from 'lucide-react'
 
 export default function Register() {
   const navigate = useNavigate()
   const [loading, setLoading] = React.useState(false)
+  const [form, setForm] = React.useState({ username: '', password: '', confirmPassword: '', nickname: '' })
+  const [error, setError] = React.useState('')
 
-  const handleSubmit = async (values: RegisterForm) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    const { username, password, confirmPassword, nickname } = form
+    if (!username || !password || !nickname) { setError('请填写所有必填项'); return }
+    if (username.length < 3) { setError('用户名至少3个字符'); return }
+    if (password.length < 6) { setError('密码至少6个字符'); return }
+    if (password !== confirmPassword) { setError('两次输入的密码不一致'); return }
+
     setLoading(true)
     try {
-      const params = { username: values.username, password: values.password, nickname: values.nickname }
+      const params = { username, password, nickname }
       if (isMockMode()) {
         const res = await mockApi.register(params)
-        if (res.code !== 0) {
-          message.error(res.message)
-          return
-        }
+        if (res.code !== 0) { setError(res.message); return }
       } else {
         await http.post('/auth/register', params)
       }
-      message.success('注册成功，请登录')
-      navigate('/login')
+      navigate('/login', { state: { registered: true } })
     } catch (err: any) {
-      message.error(err?.response?.data?.message || '注册失败，请重试')
+      setError(err?.response?.data?.message || '注册失败，请重试')
     } finally {
       setLoading(false)
     }
   }
 
+  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [field]: e.target.value }))
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      background: 'linear-gradient(135deg, #0b1a33 0%, #0d2b5e 30%, #1677ff 100%)',
-      padding: 16,
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      {/* Decorative */}
-      <div style={{
-        position: 'absolute',
-        top: -80,
-        right: -80,
-        width: 300,
-        height: 300,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(22,119,255,0.12) 0%, transparent 70%)',
-      }} />
-
-      <Card
-        style={{
-          width: 420,
-          maxWidth: '100%',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-xl)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-        bordered={false}
-      >
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{
-            width: 56,
-            height: 56,
-            borderRadius: 14,
-            background: 'linear-gradient(135deg, var(--success), #73d13d)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px',
-            boxShadow: '0 4px 12px rgba(82,196,26,0.3)',
-          }}>
-            <RobotOutlined style={{ fontSize: 28, color: '#fff' }} />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 relative overflow-hidden">
+      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-blue-100/20" />
+      <Card className="w-full max-w-sm relative z-10 border-slate-200">
+        <CardContent className="pt-8 pb-6">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-md shadow-emerald-200">
+              <Sparkles className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">创建账号</h1>
+            <p className="text-sm text-slate-500 mt-1">注册 PlanFlow AI 账号开始使用</p>
           </div>
-          <Title level={3} style={{ margin: 0, marginBottom: 4, color: '#1a1a1a' }}>
-            创建账号
-          </Title>
-          <Text style={{ color: '#999' }}>注册 PlanFlowAI 账号开始使用</Text>
-        </div>
 
-        <Form
-          name="register"
-          layout="vertical"
-          onFinish={handleSubmit}
-          autoComplete="off"
-          requiredMark={false}
-        >
-          <Form.Item
-            name="username"
-            rules={[
-              { required: true, message: '请输入用户名' },
-              { min: 3, message: '用户名至少3个字符' },
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined style={{ color: '#999' }} />}
-              placeholder="用户名"
-              size="large"
-              style={{ borderRadius: 'var(--radius-sm)' }}
-            />
-          </Form.Item>
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="r-username">用户名</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input id="r-username" placeholder="请输入用户名" className="pl-10" value={form.username} onChange={update('username')} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="r-nickname">昵称</Label>
+              <div className="relative">
+                <Smile className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input id="r-nickname" placeholder="请输入昵称" className="pl-10" value={form.nickname} onChange={update('nickname')} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="r-password">密码</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input id="r-password" type="password" placeholder="请输入密码" className="pl-10" value={form.password} onChange={update('password')} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="r-confirm">确认密码</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input id="r-confirm" type="password" placeholder="请再次输入密码" className="pl-10" value={form.confirmPassword} onChange={update('confirmPassword')} />
+              </div>
+            </div>
 
-          <Form.Item
-            name="nickname"
-            rules={[{ required: true, message: '请输入昵称' }]}
-          >
-            <Input
-              prefix={<SmileOutlined style={{ color: '#999' }} />}
-              placeholder="昵称"
-              size="large"
-              style={{ borderRadius: 'var(--radius-sm)' }}
-            />
-          </Form.Item>
+            {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
-          <Form.Item
-            name="password"
-            rules={[
-              { required: true, message: '请输入密码' },
-              { min: 6, message: '密码至少6个字符' },
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: '#999' }} />}
-              placeholder="密码"
-              size="large"
-              style={{ borderRadius: 'var(--radius-sm)' }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="confirmPassword"
-            dependencies={['password']}
-            rules={[
-              { required: true, message: '请确认密码' },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('password') === value) {
-                    return Promise.resolve()
-                  }
-                  return Promise.reject(new Error('两次输入的密码不一致'))
-                },
-              }),
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: '#999' }} />}
-              placeholder="确认密码"
-              size="large"
-              style={{ borderRadius: 'var(--radius-sm)' }}
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              block
-              size="large"
-              loading={loading}
-              style={{
-                borderRadius: 'var(--radius-sm)',
-                height: 46,
-                fontSize: 16,
-                fontWeight: 600,
-                background: 'linear-gradient(135deg, var(--success), #73d13d)',
-                border: 'none',
-                boxShadow: '0 4px 12px rgba(82,196,26,0.3)',
-              }}
-            >
+            <Button type="submit" variant="gradient" size="lg" className="w-full !bg-gradient-to-br !from-emerald-500 !to-blue-600 hover:!from-emerald-600 hover:!to-blue-700" loading={loading}>
               注册
             </Button>
-          </Form.Item>
-        </Form>
+          </form>
 
-        <div style={{ textAlign: 'center' }}>
-          <Space>
-            <Text style={{ color: '#999' }}>已有账号？</Text>
-            <Link to="/login" style={{ fontWeight: 500 }}>立即登录</Link>
-          </Space>
-        </div>
+          <div className="mt-5 text-center text-sm text-slate-500">
+            已有账号？
+            <Link to="/login" className="ml-1.5 text-blue-600 font-medium hover:text-blue-700 transition-colors">
+              立即登录
+            </Link>
+          </div>
+        </CardContent>
       </Card>
     </div>
   )

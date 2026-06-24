@@ -1,23 +1,19 @@
 import React from 'react'
-import { Layout, Menu, Button, Avatar, Dropdown, Typography } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import {
-  DashboardOutlined,
-  UserOutlined,
-  ArrowLeftOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  BarChartOutlined,
-  TeamOutlined,
-} from '@ant-design/icons'
 import { useAuthStore } from '../stores/authStore'
-
-const { Header, Sider, Content } = Layout
-const { Text } = Typography
+import { Button } from '../components/ui/button'
+import { Avatar, AvatarFallback } from '../components/ui/avatar'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu'
+import {
+  LayoutDashboard, Users, ArrowLeft, LogOut, BarChart3, User,
+} from 'lucide-react'
 
 const adminNavItems = [
-  { key: '/admin', icon: <BarChartOutlined />, label: '系统状态' },
-  { key: '/admin/users', icon: <TeamOutlined />, label: '用户管理' },
+  { key: '/admin', icon: BarChart3, label: '系统状态' },
+  { key: '/admin/users', icon: Users, label: '用户管理' },
 ]
 
 export default function AdminLayout() {
@@ -30,129 +26,121 @@ export default function AdminLayout() {
     navigate('/login')
   }
 
-  const userMenuItems = [
-    { key: 'back', icon: <ArrowLeftOutlined />, label: '返回用户端' },
-    { type: 'divider' as const },
-    { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true },
-  ]
+  const isActive = (path: string) =>
+    path === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(path)
 
-  const handleUserMenuClick = ({ key }: { key: string }) => {
-    if (key === 'back') {
-      navigate('/')
-    } else if (key === 'logout') {
-      handleLogout()
-    }
-  }
+  const firstLetter = (user?.nickname || user?.username || '?')[0].toUpperCase()
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <div className="min-h-screen bg-slate-50 font-sans">
       {/* Desktop Header */}
-      <Header className="hide-on-mobile" style={{
-        background: '#001529',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px',
-        height: 56,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <DashboardOutlined style={{ fontSize: 20, color: '#fff' }} />
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>PlanFlowAI 管理后台</Text>
+      <header className="hidden md:flex items-center justify-between h-14 px-6 bg-slate-900 text-white sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <LayoutDashboard className="w-5 h-5 text-blue-400" />
+          <span className="text-base font-semibold">PlanFlowAI 管理后台</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/')} style={{ color: '#fff' }}>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="text-gray-300 hover:text-white hover:bg-slate-800"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
             返回用户端
           </Button>
-          <Dropdown
-            menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
-            placement="bottomRight"
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: '#fff' }}>
-              <Avatar size={28} icon={<UserOutlined />} style={{ background: '#1677ff' }} />
-              <Text style={{ color: '#fff' }}>{user?.nickname || user?.username}</Text>
-            </div>
-          </Dropdown>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-blue-600 text-white text-xs">
+                    {firstLetter}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm text-gray-200 hidden sm:block">
+                  {user?.nickname || user?.username}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate('/')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                返回用户端
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                <LogOut className="w-4 h-4 mr-2" />
+                退出登录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </Header>
+      </header>
 
       {/* Mobile Top Bar */}
-      <div className="show-on-mobile" style={{
-        background: '#001529',
-        padding: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 48,
-        color: '#fff',
-      }}>
-        <Text style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>管理后台</Text>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="text" size="small" icon={<ArrowLeftOutlined />} onClick={() => navigate('/')} style={{ color: '#fff' }} />
-          <MenuOutlined style={{ fontSize: 18, color: '#fff', cursor: 'pointer' }} onClick={() => navigate('/admin/settings')} />
+      <div className="md:hidden flex items-center justify-between h-12 px-4 bg-slate-900 text-white">
+        <span className="font-semibold text-sm">管理后台</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-gray-300 h-8">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
-      <Layout>
+      <div className="flex">
         {/* Desktop Sidebar */}
-        <Sider className="hide-on-mobile" width={200} style={{ background: '#fff' }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[location.pathname]}
-            style={{ height: '100%', borderRight: '1px solid #f0f0f0' }}
-            items={adminNavItems.map((item) => ({
-              key: item.key,
-              icon: item.icon,
-              label: item.label,
-              onClick: () => navigate(item.key),
-            }))}
-          />
-        </Sider>
+        <aside className="hidden md:block w-48 min-h-[calc(100vh-56px)] bg-white border-r border-slate-100 py-3">
+          <nav className="flex flex-col gap-0.5 px-2">
+            {adminNavItems.map(item => {
+              const active = isActive(item.key)
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => navigate(item.key)}
+                  className={`
+                    flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 w-full text-left
+                    ${active
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
 
         {/* Content */}
-        <Content style={{ padding: 16, background: '#f5f5f5', minHeight: 'calc(100vh - 56px)' }}>
+        <main className="flex-1 p-4 min-h-[calc(100vh-56px)]">
           <Outlet />
-        </Content>
-      </Layout>
+        </main>
+      </div>
 
       {/* Mobile Bottom Nav */}
-      <div className="show-on-mobile" style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: '#fff',
-        borderTop: '1px solid #f0f0f0',
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        height: 56,
-        zIndex: 100,
-      }}>
-        {adminNavItems.map((item) => {
-          const isActive = item.key === '/admin'
-            ? location.pathname === '/admin'
-            : location.pathname.startsWith(item.key)
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center h-14 z-50">
+        {adminNavItems.map(item => {
+          const active = isActive(item.key)
+          const Icon = item.icon
           return (
-            <div
+            <button
               key={item.key}
               onClick={() => navigate(item.key)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 2,
-                cursor: 'pointer',
-                padding: '4px 12px',
-                color: isActive ? '#1677ff' : '#999',
-                fontSize: 10,
-              }}
+              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[48px] min-h-[48px] ${
+                active ? 'text-blue-600' : 'text-slate-400'
+              }`}
             >
-              <div style={{ fontSize: 20 }}>{item.icon}</div>
-              <span>{item.label}</span>
-            </div>
+              <Icon className="w-5 h-5" />
+              <span className={`text-[10px] font-medium ${active ? 'font-semibold' : ''}`}>
+                {item.label}
+              </span>
+            </button>
           )
         })}
-      </div>
-    </Layout>
+      </nav>
+    </div>
   )
 }

@@ -1,51 +1,30 @@
 import React from 'react'
-import { Card, Tabs, List, Tag, Button, Empty, Spin, Typography, Space, message, Badge, Tooltip } from 'antd'
-import {
-  BellOutlined, CheckCircleOutlined, WarningOutlined, ShareAltOutlined,
-  InfoCircleOutlined, CheckOutlined, DeleteOutlined, FilterOutlined,
-  ClockCircleOutlined, RightOutlined,
-} from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
-import { useNavigate } from 'react-router-dom'
+import { Button } from '../../components/ui/button'
+import { Badge } from '../../components/ui/badge'
+import { Card, CardContent } from '../../components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { Skeleton } from '../../components/ui/skeleton'
+import EmptyState from '../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { NotificationItem } from '../../services/mockData'
+import { Bell, Info, AlertTriangle, Share2, CheckCheck, ChevronRight } from 'lucide-react'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-const { Title, Text } = Typography
-
-const typeConfig: Record<string, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
-  TASK_DEADLINE: {
-    icon: <WarningOutlined style={{ color: '#ff4d4f' }} />,
-    color: '#ff4d4f',
-    bg: '#fff2f0',
-    label: '任务截止',
-  },
-  SYSTEM: {
-    icon: <InfoCircleOutlined style={{ color: '#1677ff' }} />,
-    color: '#1677ff',
-    bg: '#e6f4ff',
-    label: '系统通知',
-  },
-  REMINDER: {
-    icon: <BellOutlined style={{ color: '#faad14' }} />,
-    color: '#faad14',
-    bg: '#fffbe6',
-    label: '提醒',
-  },
-  SHARE: {
-    icon: <ShareAltOutlined style={{ color: '#52c41a' }} />,
-    color: '#52c41a',
-    bg: '#f6ffed',
-    label: '分享',
-  },
+const typeConfig: Record<string, { icon: React.ReactNode; bg: string; label: string }> = {
+  TASK_DEADLINE: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, bg: 'bg-red-50', label: '任务截止' },
+  SYSTEM: { icon: <Info className="w-4 h-4 text-blue-500" />, bg: 'bg-blue-50', label: '系统通知' },
+  REMINDER: { icon: <Bell className="w-4 h-4 text-orange-500" />, bg: 'bg-orange-50', label: '提醒' },
+  SHARE: { icon: <Share2 className="w-4 h-4 text-emerald-500" />, bg: 'bg-emerald-50', label: '分享' },
 }
 
-export default function Notifications() {
+export default function NotificationsPage() {
   const navigate = useNavigate()
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -54,241 +33,113 @@ export default function Notifications() {
   const [total, setTotal] = React.useState(0)
   const pageSize = 20
 
-  const loadNotifications = React.useCallback(async (p?: number) => {
+  const load = React.useCallback(async (p?: number) => {
     setLoading(true)
     try {
-      const params = { page: p || page, pageSize: pageSize, unreadOnly: tab === 'unread' }
-      if (isMockMode()) {
-        const res = await mockApi.getNotifications(params)
-        setNotifications(res.data.list)
-        setTotal(res.data.total)
-      } else {
-        const res: any = await http.get('/notifications', { params })
-        setNotifications(res.data.list)
-        setTotal(res.data.total)
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false)
-    }
+      const params = { page: p || page, pageSize, unreadOnly: tab === 'unread' }
+      if (isMockMode()) { const res = await mockApi.getNotifications(params); setNotifications(res.data.list); setTotal(res.data.total) }
+      else { const res: any = await http.get('/notifications', { params }); setNotifications(res.data.list); setTotal(res.data.total) }
+    } catch { } finally { setLoading(false) }
   }, [tab, page])
 
-  React.useEffect(() => { loadNotifications() }, [loadNotifications])
+  React.useEffect(() => { load() }, [load])
 
-  const handleMarkAllRead = async () => {
+  const markAllRead = async () => {
     try {
-      if (isMockMode()) {
-        await mockApi.markAllNotificationsRead()
-      } else {
-        await http.post('/notifications/read-all')
-      }
-      message.success('已全部标记为已读')
-      loadNotifications()
-    } catch {
-      message.error('操作失败')
-    }
+      if (isMockMode()) await mockApi.markAllNotificationsRead()
+      else await http.post('/notifications/read-all')
+      load()
+    } catch { }
   }
 
-  const handleMarkRead = async (item: NotificationItem) => {
+  const markRead = async (item: NotificationItem) => {
     if (item.read) return
     try {
-      if (isMockMode()) {
-        // In mock mode, just update locally
-      } else {
-        await http.patch(`/notifications/${item.id}/read`)
-      }
-      loadNotifications()
-    } catch {
-      // silent
-    }
+      if (!isMockMode()) await http.patch(`/notifications/${item.id}/read`)
+      load()
+    } catch { }
   }
 
-  const renderNotification = (item: NotificationItem) => {
+  const renderItem = (item: NotificationItem) => {
     const cfg = typeConfig[item.type] || typeConfig.SYSTEM
     return (
-      <List.Item
+      <div key={item.id}
         onClick={() => {
-          if (!item.read) handleMarkRead(item)
+          if (!item.read) markRead(item)
           if (item.relatedTaskId) navigate(`/tasks/${item.relatedTaskId}`)
         }}
-        style={{
-          cursor: 'pointer',
-          padding: '14px 16px',
-          borderLeft: `3px solid ${item.read ? 'transparent' : cfg.color}`,
-          background: item.read ? '#fff' : `${cfg.bg}88`,
-          transition: 'all 0.2s',
-          borderRadius: 0,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
-        onMouseLeave={e => { e.currentTarget.style.background = item.read ? '#fff' : `${cfg.bg}88` }}
-        extra={
-          <Space size={4}>
-            {!item.read && (
-              <Tag color={cfg.color} style={{ fontSize: 11, borderRadius: 4 }}>
-                未读
-              </Tag>
-            )}
-            {item.relatedTaskId && (
-              <Button type="text" size="small" icon={<RightOutlined />} style={{ color: '#999' }} />
-            )}
-          </Space>
-        }
+        className={`flex items-start gap-3 p-4 cursor-pointer transition-all duration-150 hover:bg-slate-50 rounded-lg border-l-4 ${
+          item.read ? 'border-l-transparent bg-white' : `${cfg.bg} bg-opacity-50 border-l-current`
+        }`}
       >
-        <List.Item.Meta
-          avatar={
-            <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: cfg.bg,
-              fontSize: 18,
-            }}>
-              {cfg.icon}
-            </div>
-          }
-          title={
-            <Space size={8}>
-              <Text strong style={{ fontSize: 14, color: item.read ? '#666' : undefined }}>
-                {item.title}
-              </Text>
-              <Text style={{ fontSize: 12, color: '#999' }}>
-                {dayjs(item.createdAt).fromNow()}
-              </Text>
-            </Space>
-          }
-          description={
-            <Text
-              style={{
-                fontSize: 13,
-                color: item.read ? '#999' : '#555',
-                display: 'block',
-                lineHeight: 1.5,
-                marginTop: 2,
-              }}
-            >
-              {item.content}
-            </Text>
-          }
-        />
-      </List.Item>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
+          {cfg.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-sm font-medium ${item.read ? 'text-slate-500' : 'text-slate-900'}`}>{item.title}</span>
+            {!item.read && <Badge variant="destructive" className="text-[10px] px-1 py-0 h-auto">未读</Badge>}
+          </div>
+          <p className={`text-xs mt-0.5 ${item.read ? 'text-slate-400' : 'text-slate-600'}`}>{item.content}</p>
+          <p className="text-[10px] text-slate-400 mt-1">{dayjs(item.createdAt).fromNow()}</p>
+        </div>
+        {item.relatedTaskId && <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 mt-2" />}
+      </div>
     )
   }
 
   return (
-    <div className="page-container" style={{ padding: '16px 0' }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-      }}>
+    <div className="py-4 animate-fade-in">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <Title level={4} style={{ margin: 0 }}>🔔 通知中心</Title>
-          <Text style={{ color: '#999', fontSize: 13, marginTop: 2, display: 'block' }}>
-            {tab === 'unread'
-              ? `你有 ${total} 条未读通知`
-              : `共 ${total} 条通知`
-            }
-          </Text>
+          <h2 className="text-xl font-bold text-slate-900">🔔 通知中心</h2>
+          <p className="text-sm text-slate-400 mt-0.5">{tab === 'unread' ? `你有 ${total} 条未读通知` : `共 ${total} 条通知`}</p>
         </div>
         {tab === 'unread' && total > 0 && (
-          <Tooltip title="全部标记为已读">
-            <Button
-              icon={<CheckOutlined />}
-              onClick={handleMarkAllRead}
-              style={{ borderRadius: 'var(--radius-sm)' }}
-            >
-              全部已读
-            </Button>
-          </Tooltip>
+          <Button variant="outline" size="sm" onClick={markAllRead}><CheckCheck className="w-4 h-4 mr-1" /> 全部已读</Button>
         )}
       </div>
 
-      <Card bodyStyle={{ padding: 0 }} style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-        <Tabs
-          activeKey={tab}
-          onChange={(key) => { setTab(key); setPage(1) }}
-          style={{ padding: '0 16px' }}
-          tabBarExtraContent={
-            tab === 'unread' && (
-              <Text style={{ fontSize: 12, color: '#999' }}>
-                {total > 0 ? `剩余 ${total} 条` : ''}
-              </Text>
-            )
-          }
-          items={[
-            {
-              key: 'unread',
-              label: (
-                <span>
-                  <BellOutlined style={{ marginRight: 4 }} />
-                  未读
-                  {total > 0 && <Tag color="blue" style={{ marginLeft: 4, fontSize: 10 }}>{total}</Tag>}
-                </span>
-              ),
-              children: (
-                <Spin spinning={loading}>
-                  {notifications.length > 0 ? (
-                    <List
-                      dataSource={notifications}
-                      pagination={{
-                        current: page,
-                        pageSize,
-                        total,
-                        onChange: (p) => setPage(p),
-                        showSizeChanger: false,
-                        size: 'small',
-                      }}
-                      renderItem={renderNotification}
-                    />
-                  ) : (
-                    <Empty
-                      description="暂无未读通知"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      style={{ padding: '40px 0' }}
-                    >
-                      <Button type="primary" onClick={() => setTab('all')}>
-                        查看全部通知
-                      </Button>
-                    </Empty>
-                  )}
-                </Spin>
-              ),
-            },
-            {
-              key: 'all',
-              label: <span><InfoCircleOutlined style={{ marginRight: 4 }} />全部</span>,
-              children: (
-                <Spin spinning={loading}>
-                  {notifications.length > 0 ? (
-                    <List
-                      dataSource={notifications}
-                      pagination={{
-                        current: page,
-                        pageSize,
-                        total,
-                        onChange: (p) => setPage(p),
-                        showSizeChanger: false,
-                        size: 'small',
-                      }}
-                      renderItem={renderNotification}
-                    />
-                  ) : (
-                    <Empty
-                      description="暂无通知"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      style={{ padding: '40px 0' }}
-                    />
-                  )}
-                </Spin>
-              ),
-            },
-          ]}
-        />
+      <Card className="border-slate-100">
+        <CardContent className="p-0">
+          <Tabs value={tab} onValueChange={t => { setTab(t); setPage(1) }} className="w-full">
+            <div className="px-4 pt-3">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="unread" className="flex items-center gap-2">
+                  <Bell className="w-4 h-4" /> 未读 {total > 0 && <Badge variant="default" className="text-[10px] px-1 py-0 h-auto">{total}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="all" className="flex items-center gap-2">
+                  <Info className="w-4 h-4" /> 全部
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="unread" className="mt-2 px-0">
+              {loading ? <div className="space-y-3 p-4"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
+              : notifications.length > 0 ? (
+                <div className="divide-y divide-slate-100">{notifications.map(renderItem)}</div>
+              ) : (
+                <div className="py-12"><EmptyState description="暂无未读通知" actionText="查看全部通知" onAction={() => setTab('all')} /></div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="all" className="mt-2 px-0">
+              {loading ? <div className="space-y-3 p-4"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
+              : notifications.length > 0 ? (
+                <div className="divide-y divide-slate-100">{notifications.map(renderItem)}</div>
+              ) : (
+                <div className="py-12"><EmptyState description="暂无通知" /></div>
+              )}
+            </TabsContent>
+          </Tabs>
+          {total > pageSize && (
+            <div className="flex justify-center gap-2 p-4">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>上一页</Button>
+              <span className="text-sm text-slate-400 self-center">第 {page} 页</span>
+              <Button variant="outline" size="sm" disabled={page >= Math.ceil(total / pageSize)} onClick={() => setPage(p => p + 1)}>下一页</Button>
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>
   )

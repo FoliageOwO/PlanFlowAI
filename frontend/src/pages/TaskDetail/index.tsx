@@ -1,60 +1,50 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  Card, Tag, Button, Spin, Descriptions, Collapse, Checkbox, Input,
-  List, Typography, Space, message, Modal, Popconfirm, Divider, Empty,
-  Row, Col, Skeleton, Tooltip, Select, Badge, Form, DatePicker, InputNumber,
-} from 'antd'
-import {
-  EditOutlined, DeleteOutlined, PlusOutlined, ArrowLeftOutlined,
-  CheckCircleOutlined, SyncOutlined, ClockCircleOutlined, RobotOutlined,
-  BellOutlined, FileTextOutlined, PictureOutlined, FileOutlined, AudioOutlined,
-  SendOutlined, ExclamationCircleOutlined,
-  CalendarOutlined, FlagOutlined, LinkOutlined,
-} from '@ant-design/icons'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Textarea } from '../../components/ui/textarea'
+import { Badge } from '../../components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
+import { Label } from '../../components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
+import { Checkbox } from '../../components/ui/checkbox'
+import { Separator } from '../../components/ui/separator'
+import { Skeleton } from '../../components/ui/skeleton'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '../../components/ui/alert-dialog'
+import EmptyState from '../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { TaskItem, ChecklistItem } from '../../services/mockData'
+import {
+  ArrowLeft, Edit, Trash2, Plus, CheckCircle2, Clock, Bell, Calendar, Flag, Link2,
+  Sparkles, Send, RotateCw, XCircle, FileText, Image, File, AlertTriangle,
+} from 'lucide-react'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-const { Title, Text } = Typography
-const { Panel } = Collapse
-const { TextArea } = Input
-const { confirm } = Modal
-
-const priorityConfig: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
-  URGENT: { color: 'red', label: '紧急', icon: <ExclamationCircleOutlined /> },
-  HIGH: { color: 'orange', label: '高', icon: <FlagOutlined /> },
-  MEDIUM: { color: 'blue', label: '中', icon: <FlagOutlined /> },
-  LOW: { color: 'default', label: '低', icon: <FlagOutlined /> },
+const priorityConfig: Record<string, { label: string; variant: 'destructive' | 'warning' | 'default' | 'secondary' }> = {
+  URGENT: { label: '紧急', variant: 'destructive' },
+  HIGH: { label: '高', variant: 'warning' },
+  MEDIUM: { label: '中', variant: 'default' },
+  LOW: { label: '低', variant: 'secondary' },
 }
-
-const statusConfig: Record<string, { color: string; label: string }> = {
-  TODO: { color: 'default', label: '待处理' },
-  DOING: { color: 'processing', label: '进行中' },
-  DONE: { color: 'success', label: '已完成' },
-  CANCELLED: { color: 'default', label: '已取消' },
+const statusConfig: Record<string, { label: string; variant: 'default' | 'success' | 'secondary' | 'destructive'; nextLabel: string }> = {
+  TODO: { label: '待处理', variant: 'secondary', nextLabel: '开始处理' },
+  DOING: { label: '进行中', variant: 'default', nextLabel: '标记完成' },
+  DONE: { label: '已完成', variant: 'success', nextLabel: '已完成 ✓' },
+  CANCELLED: { label: '已取消', variant: 'destructive', nextLabel: '重新打开' },
 }
-
-const channelLabel: Record<string, string> = {
-  IN_APP: '站内通知',
-  EMAIL: '邮件',
-  SMS: '短信',
-  WEIXIN: '微信',
-  LOCAL_APP: '本地通知',
-}
-
-const sourceIcons: Record<string, React.ReactNode> = {
-  TEXT: <FileTextOutlined />,
-  IMAGE: <PictureOutlined />,
-  FILE: <FileOutlined />,
-  AUDIO: <AudioOutlined />,
-}
+const nextStatus: Record<string, TaskItem['status']> = { TODO: 'DOING', DOING: 'DONE', DONE: 'DONE', CANCELLED: 'TODO' }
+const channelLabel: Record<string, string> = { IN_APP: '站内通知', EMAIL: '邮件', SMS: '短信', WEIXIN: '微信', LOCAL_APP: '本地通知' }
+const sourceIcons: Record<string, React.ReactNode> = { TEXT: <FileText className="w-4 h-4" />, IMAGE: <Image className="w-4 h-4" />, FILE: <File className="w-4 h-4" />, AUDIO: <File className="w-4 h-4" /> }
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
@@ -70,22 +60,12 @@ export default function TaskDetail() {
     try {
       if (isMockMode()) {
         const res = await mockApi.getTaskDetail(id!)
-        if (res.code === 0 && res.data) {
-          setTask(res.data)
-          setChecklist(res.data.checklist || [])
-        } else {
-          message.error(res.message)
-        }
+        if (res.code === 0 && res.data) { setTask(res.data); setChecklist(res.data.checklist || []) }
       } else {
         const res: any = await http.get(`/tasks/${id}`)
-        setTask(res.data)
-        setChecklist(res.data.checklist || [])
+        setTask(res.data); setChecklist(res.data.checklist || [])
       }
-    } catch {
-      message.error('获取任务详情失败')
-    } finally {
-      setLoading(false)
-    }
+    } catch { /* silent */ } finally { setLoading(false) }
   }, [id])
 
   React.useEffect(() => { fetchTask() }, [fetchTask])
@@ -93,503 +73,292 @@ export default function TaskDetail() {
   const saveChecklist = async (items: ChecklistItem[]) => {
     setSavingChecklist(true)
     try {
-      if (isMockMode()) {
-        await mockApi.updateChecklist(id!, items)
-      } else {
-        // Map frontend fields (text/done) to backend fields (content/checked)
-        const backendItems = items.map(item => ({
-          content: item.text,
-          checked: item.done ? 1 : 0,
-        }))
+      if (isMockMode()) await mockApi.updateChecklist(id!, items)
+      else {
+        const backendItems = items.map(item => ({ content: item.text, checked: item.done ? 1 : 0 }))
         await http.put(`/tasks/${id}/checklist`, { items: backendItems })
       }
       setChecklist(items)
-    } catch {
-      message.error('保存检查项失败')
-    } finally {
-      setSavingChecklist(false)
-    }
+    } catch { } finally { setSavingChecklist(false) }
   }
 
-  const handleToggleCheck = (item: ChecklistItem) => {
-    const updated = checklist.map(c =>
-      c.id === item.id ? { ...c, done: !c.done } : c,
-    )
-    saveChecklist(updated)
+  const toggleCheck = (item: ChecklistItem) => {
+    saveChecklist(checklist.map(c => c.id === item.id ? { ...c, done: !c.done } : c))
   }
 
-  const handleAddCheckItem = () => {
+  const addCheckItem = () => {
     if (!newCheckItem.trim()) return
-    const newItem: ChecklistItem = {
-      id: `cl-${Date.now()}`,
-      text: newCheckItem.trim(),
-      done: false,
-    }
-    saveChecklist([...checklist, newItem])
+    saveChecklist([...checklist, { id: `cl-${Date.now()}`, text: newCheckItem.trim(), done: false }])
     setNewCheckItem('')
   }
 
   const handleChangeStatus = async (status: TaskItem['status']) => {
     try {
-      if (isMockMode()) {
-        await mockApi.updateTask(id!, { status })
-      } else {
-        await http.patch(`/tasks/${id}/status`, { status })
-      }
+      if (isMockMode()) await mockApi.updateTask(id!, { status })
+      else await http.patch(`/tasks/${id}/status`, { status })
       setTask(prev => prev ? { ...prev, status } : prev)
-      message.success(`状态已更新为 ${statusConfig[status].label}`)
-    } catch {
-      message.error('更新状态失败')
-    }
+
+      // Cancel local notifications when task is marked as done or cancelled
+      if (status === 'DONE' || status === 'CANCELLED') {
+        try {
+          const { cancelReminder } = await import('../../services/localNotificationService')
+          const { isNative } = await import('../../services/platformService')
+          if (isNative() && task?.reminders) {
+            for (const reminder of task.reminders) {
+              await cancelReminder(Number(reminder.id))
+            }
+          }
+        } catch { /* non-critical */ }
+      }
+    } catch { }
   }
 
-  const [editModalOpen, setEditModalOpen] = React.useState(false)
-  const [editForm] = Form.useForm()
+  const [editOpen, setEditOpen] = React.useState(false)
+  const [editForm, setEditForm] = React.useState({ title: '', description: '', deadline: '', priority: 'MEDIUM', estimatedHours: 0 })
   const [savingEdit, setSavingEdit] = React.useState(false)
 
-  const handleEdit = () => {
+  const openEdit = () => {
     if (task) {
-      editForm.setFieldsValue({
-        title: task.title,
-        description: task.description,
-        deadline: task.deadline ? dayjs(task.deadline) : undefined,
-        priority: task.priority,
-        estimatedHours: task.estimatedHours || 0,
-      })
-      setEditModalOpen(true)
+      setEditForm({ title: task.title, description: task.description, deadline: task.deadline ? dayjs(task.deadline).format('YYYY-MM-DDTHH:mm') : '', priority: task.priority, estimatedHours: task.estimatedHours || 0 })
+      setEditOpen(true)
     }
   }
 
-  const handleSaveEdit = async (values: any) => {
-    if (!task) return
+  const saveEdit = async () => {
+    if (!task || !editForm.title.trim()) return
     setSavingEdit(true)
     try {
-      const data = {
-        title: values.title,
-        description: values.description || '',
-        deadline: values.deadline ? values.deadline.format('YYYY-MM-DD HH:mm:ss') : task.deadline,
-        priority: values.priority || 'MEDIUM',
-        estimatedHours: values.estimatedHours || 0,
-      }
-      if (isMockMode()) {
-        await mockApi.updateTask(id!, data as any)
-      } else {
-        await http.put(`/tasks/${id}`, data)
-      }
-      message.success('任务已更新')
-      setEditModalOpen(false)
-      fetchTask()
-    } catch {
-      message.error('更新失败')
-    } finally {
-      setSavingEdit(false)
-    }
+      const data = { ...editForm, deadline: editForm.deadline ? dayjs(editForm.deadline).format('YYYY-MM-DD HH:mm:ss') : task.deadline }
+      if (isMockMode()) await mockApi.updateTask(id!, data as any)
+      else await http.put(`/tasks/${id}`, data)
+      setEditOpen(false); fetchTask()
+    } catch { } finally { setSavingEdit(false) }
   }
 
-  const handleDelete = () => {
-    confirm({
-      title: '确认删除',
-      content: '确定要删除这个任务吗？删除后不可恢复。',
-      okText: '确认删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          if (isMockMode()) {
-            await mockApi.deleteTask(id!)
-          } else {
-            await http.delete(`/tasks/${id}`)
-          }
-          message.success('任务已删除')
-          navigate('/tasks')
-        } catch {
-          message.error('删除失败')
-        }
-      },
-    })
+  const handleDelete = async () => {
+    try {
+      if (isMockMode()) await mockApi.deleteTask(id!)
+      else await http.delete(`/tasks/${id}`)
+      navigate('/tasks')
+    } catch { }
   }
 
-  if (loading) {
-    return (
-      <div className="page-container" style={{ padding: '16px 0', maxWidth: 800, margin: '0 auto' }}>
-        <Skeleton active paragraph={{ rows: 1 }} style={{ marginBottom: 16 }} />
-        <Card>
-          <Skeleton active paragraph={{ rows: 6 }} />
-        </Card>
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="py-4 max-w-4xl mx-auto space-y-3">
+      <Skeleton className="h-8 w-32" /><Skeleton className="h-40 w-full" /><Skeleton className="h-60 w-full" />
+    </div>
+  )
 
-  if (!task) {
-    return (
-      <div className="page-container" style={{ padding: '16px 0', maxWidth: 800, margin: '0 auto' }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tasks')} style={{ marginBottom: 16 }}>
-          返回列表
-        </Button>
-        <Empty description="任务不存在或已被删除">
-          <Button type="primary" onClick={() => navigate('/tasks')}>返回任务列表</Button>
-        </Empty>
-      </div>
-    )
-  }
-
-  const nextStatus: Record<string, TaskItem['status']> = {
-    TODO: 'DOING',
-    DOING: 'DONE',
-    DONE: 'DONE',
-    CANCELLED: 'TODO',
-  }
+  if (!task) return (
+    <div className="py-4 max-w-4xl mx-auto">
+      <Button variant="ghost" onClick={() => navigate('/tasks')} className="mb-4"><ArrowLeft className="w-4 h-4 mr-1" /> 返回列表</Button>
+      <EmptyState description="任务不存在或已被删除" actionText="返回任务列表" actionPath="/tasks" />
+    </div>
+  )
 
   const isOverdue = dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE'
   const checkedCount = checklist.filter(c => c.done).length
   const priCfg = priorityConfig[task.priority]
+  const stCfg = statusConfig[task.status]
+  const ns = nextStatus[task.status]
 
   return (
-    <div className="page-container" style={{ padding: '16px 0', maxWidth: 800, margin: '0 auto' }}>
-      {/* Back */}
-      <Button
-        type="text"
-        icon={<ArrowLeftOutlined />}
-        onClick={() => navigate('/tasks')}
-        style={{ marginBottom: 16, color: '#666' }}
-      >
-        返回列表
-      </Button>
+    <div className="py-4 max-w-4xl mx-auto animate-fade-in">
+      <Button variant="ghost" onClick={() => navigate('/tasks')} className="mb-4"><ArrowLeft className="w-4 h-4 mr-1" /> 返回列表</Button>
 
-      {/* Header Section */}
-      <Card style={{ marginBottom: 16, borderRadius: 'var(--radius-lg)' }} bodyStyle={{ padding: '24px 24px 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <Title level={4} style={{ margin: 0, fontSize: 20 }}>{task.title}</Title>
-              <Badge
-                status={statusConfig[task.status].color as any}
-                text={statusConfig[task.status].label}
-                style={{ fontSize: 13 }}
-              />
+      {/* Header Card */}
+      <Card className="mb-4 border-slate-100">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <h3 className="text-xl font-bold text-slate-900">{task.title}</h3>
+                <Badge variant={stCfg.variant} className="text-xs">{stCfg.label}</Badge>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={priCfg.variant} className="text-xs">{priCfg.label}优先级</Badge>
+                {isOverdue && <Badge variant="destructive" className="text-xs"><AlertTriangle className="w-3 h-3 mr-0.5" />已过期</Badge>}
+                <span className={`text-sm flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-slate-500'}`}>
+                  <Calendar className="w-3.5 h-3.5" />
+                  {dayjs(task.deadline).format('YYYY-MM-DD HH:mm')}
+                  {isOverdue && ` (已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天)`}
+                </span>
+              </div>
             </div>
-            <Space size={12} style={{ flexWrap: 'wrap' }}>
-              <Tag color={priCfg.color} style={{ margin: 0, fontSize: 12, padding: '0 10px', lineHeight: '24px' }}>
-                {priCfg.icon} {priCfg.label}优先级
-              </Tag>
-              {isOverdue && (
-                <Tag color="red" style={{ margin: 0, fontSize: 12 }}>
-                  <ExclamationCircleOutlined /> 已过期
-                </Tag>
-              )}
-              <Text style={{ fontSize: 13, color: isOverdue ? 'var(--danger)' : '#666' }}>
-                <CalendarOutlined style={{ marginRight: 4 }} />
-                {dayjs(task.deadline).format('YYYY-MM-DD HH:mm')}
-                {isOverdue && ` (已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天)`}
-              </Text>
-            </Space>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={openEdit}><Edit className="w-4 h-4 mr-1" /> 编辑</Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50"><Trash2 className="w-4 h-4 mr-1" /> 删除</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader><AlertDialogTitle>确认删除</AlertDialogTitle>
+                  <AlertDialogDescription>确定要删除这个任务吗？删除后不可恢复。</AlertDialogDescription></AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>取消</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">确认删除</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
-          <Space>
-            <Button icon={<EditOutlined />} onClick={handleEdit}>
-              编辑
-            </Button>
-            <Popconfirm
-              title="确定删除这个任务？"
-              description="删除后不可恢复"
-              onConfirm={handleDelete}
-              okText="删除"
-              cancelText="取消"
-            >
-              <Button danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
-          </Space>
-        </div>
+        </CardContent>
       </Card>
 
-      {/* Main Content */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-4">
           {/* Description */}
-          <Card title="📝 描述" style={{ marginBottom: 16 }} size="small">
-            <Text style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-              {task.description || '暂无描述'}
-            </Text>
+          <Card className="border-slate-100">
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" />描述</CardTitle></CardHeader>
+            <CardContent><p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{task.description || '暂无描述'}</p></CardContent>
           </Card>
 
           {/* Checklist */}
-          <Card
-            title={
-              <Space>
-                <CheckCircleOutlined style={{ color: checkedCount === checklist.length && checklist.length > 0 ? 'var(--success)' : '#999' }} />
-                <span>检查清单</span>
-                <Tag color={checkedCount === checklist.length && checklist.length > 0 ? 'success' : 'default'} style={{ fontSize: 11 }}>
-                  {checkedCount}/{checklist.length}
-                </Tag>
-              </Space>
-            }
-            style={{ marginBottom: 16 }}
-            size="small"
-          >
-            {checklist.length > 0 ? (
-              <List
-                dataSource={checklist}
-                split={false}
-                renderItem={(item, index) => (
-                  <List.Item
-                    style={{
-                      padding: '8px 0',
-                      borderBottom: '1px solid var(--border-light)',
-                      cursor: 'pointer',
-                      transition: 'background 0.15s',
-                    }}
-                    onClick={() => handleToggleCheck(item)}
-                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-                      <div style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 4,
-                        border: `2px solid ${item.done ? 'var(--success)' : '#d9d9d9'}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: item.done ? 'var(--success)' : 'transparent',
-                        transition: 'all 0.2s',
-                        flexShrink: 0,
-                      }}>
-                        {item.done && <CheckCircleOutlined style={{ color: '#fff', fontSize: 12 }} />}
-                      </div>
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 14,
-                          textDecoration: item.done ? 'line-through' : 'none',
-                          color: item.done ? '#999' : 'inherit',
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {item.text}
-                      </Text>
+          <Card className="border-slate-100">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CheckCircle2 className={`w-4 h-4 ${checkedCount === checklist.length && checklist.length > 0 ? 'text-emerald-500' : 'text-slate-400'}`} />
+                检查清单
+                {checklist.length > 0 && <Badge variant={checkedCount === checklist.length ? 'success' : 'secondary'} className="text-[10px]">{checkedCount}/{checklist.length}</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {checklist.length > 0 ? (
+                <div className="space-y-1 mb-3">
+                  {checklist.map(item => (
+                    <div key={item.id} onClick={() => toggleCheck(item)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                      <Checkbox checked={item.done} className="mt-0.5" />
+                      <span className={`text-sm flex-1 transition-all ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.text}</span>
                     </div>
-                  </List.Item>
-                )}
-                locale={{ emptyText: <Empty description="暂无检查项" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
-              />
-            ) : (
-              <Empty description="暂无检查项" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '8px 0' }} />
-            )}
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <Input
-                placeholder="添加检查项"
-                value={newCheckItem}
-                onChange={e => setNewCheckItem(e.target.value)}
-                onPressEnter={handleAddCheckItem}
-                suffix={
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={handleAddCheckItem}
-                    loading={savingChecklist}
-                    disabled={!newCheckItem.trim()}
-                  />
-                }
-              />
-            </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState description="暂无检查项" />
+              )}
+              <div className="flex gap-2">
+                <Input placeholder="添加检查项" value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addCheckItem() }}
+                />
+                <Button variant="outline" size="icon" onClick={addCheckItem} disabled={!newCheckItem.trim()} loading={savingChecklist}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Source Evidence */}
           {task.sourceEvidence && (
-            <Card style={{ marginBottom: 16 }} size="small">
-              <Collapse ghost expandIconPosition="end">
-                <Panel
-                  header={<Space><LinkOutlined /> 来源原文证据</Space>}
-                  key="1"
-                >
-                  <div style={{
-                    background: '#f6f8fa',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: 12,
-                    fontSize: 13,
-                    lineHeight: 1.7,
-                    whiteSpace: 'pre-wrap',
-                    color: '#555',
-                  }}>
-                    {task.sourceEvidence}
-                  </div>
-                </Panel>
-              </Collapse>
+            <Card className="border-slate-100">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Link2 className="w-4 h-4 text-blue-600" />来源原文证据</CardTitle></CardHeader>
+              <CardContent>
+                <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{task.sourceEvidence}</div>
+              </CardContent>
             </Card>
           )}
-        </Col>
+        </div>
 
-        <Col xs={24} lg={8}>
+        {/* Right Column */}
+        <div className="space-y-4">
           {/* Basic Info */}
-          <Card title="📋 基本信息" style={{ marginBottom: 16 }} size="small">
-            <Descriptions column={1} size="small" colon={false}>
-              <Descriptions.Item label={<Text style={{ color: '#666' }}>优先级</Text>}>
-                <Tag color={priCfg.color}>{priCfg.label}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label={<Text style={{ color: '#666' }}>状态</Text>}>
-                <Badge status={statusConfig[task.status].color as any} text={statusConfig[task.status].label} />
-              </Descriptions.Item>
-              <Descriptions.Item label={<Text style={{ color: '#666' }}>截止时间</Text>}>
-                <Text type={isOverdue ? 'danger' : undefined} style={{ fontSize: 13 }}>
-                  {dayjs(task.deadline).format('MM-DD HH:mm')}
-                  {isOverdue && ' (已过期)'}
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label={<Text style={{ color: '#666' }}>预估耗时</Text>}>
-                {task.estimatedHours} 小时
-              </Descriptions.Item>
-              <Descriptions.Item label={<Text style={{ color: '#666' }}>来源类型</Text>}>
-                <Space>
-                  {sourceIcons[task.sourceType] || <FileTextOutlined />}
-                  <Text>{task.sourceType}</Text>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label={<Text style={{ color: '#666' }}>创建时间</Text>}>
-                <Text style={{ fontSize: 12 }}>{dayjs(task.createdAt).format('MM-DD HH:mm')}</Text>
-              </Descriptions.Item>
-            </Descriptions>
+          <Card className="border-slate-100">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">基本信息</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-slate-500">优先级</span><Badge variant={priCfg.variant}>{priCfg.label}</Badge></div>
+              <div className="flex justify-between"><span className="text-slate-500">状态</span><Badge variant={stCfg.variant}>{stCfg.label}</Badge></div>
+              <div className="flex justify-between"><span className="text-slate-500">截止时间</span><span className={isOverdue ? 'text-red-500' : ''}>{dayjs(task.deadline).format('MM-DD HH:mm')}{isOverdue ? ' (已过期)' : ''}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">预估耗时</span><span>{task.estimatedHours} 小时</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">来源类型</span><span className="flex items-center gap-1">{sourceIcons[task.sourceType]}{task.sourceType}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">创建时间</span><span>{dayjs(task.createdAt).format('MM-DD HH:mm')}</span></div>
+            </CardContent>
           </Card>
 
           {/* Constraints */}
           {task.constraints.length > 0 && (
-            <Card title="🔒 约束条件" style={{ marginBottom: 16 }} size="small">
-              <Space wrap>
-                {task.constraints.map((c, i) => (
-                  <Tag key={i} style={{ padding: '2px 12px', fontSize: 12 }}>{c}</Tag>
-                ))}
-              </Space>
+            <Card className="border-slate-100">
+              <CardHeader className="pb-2"><CardTitle className="text-sm">约束条件</CardTitle></CardHeader>
+              <CardContent className="flex flex-wrap gap-1.5">
+                {task.constraints.map((c, i) => <Badge key={i} variant="secondary" className="text-xs">{c}</Badge>)}
+              </CardContent>
             </Card>
           )}
 
           {/* Reminders */}
-          <Card
-            title={<Space><BellOutlined /> 提醒规则</Space>}
-            style={{ marginBottom: 16 }}
-            size="small"
-          >
-            {task.reminders.length > 0 ? (
-              <List
-                dataSource={task.reminders}
-                split={false}
-                renderItem={(reminder) => (
-                  <List.Item style={{ padding: '8px 0' }}>
-                    <Space>
-                      <BellOutlined style={{ color: 'var(--warning)' }} />
+          <Card className="border-slate-100">
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-orange-500" />提醒规则</CardTitle></CardHeader>
+            <CardContent>
+              {task.reminders.length > 0 ? (
+                <div className="space-y-2">
+                  {task.reminders.map(r => (
+                    <div key={r.id} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-orange-50">
+                      <Bell className="w-4 h-4 text-orange-500 flex-shrink-0" />
                       <div>
-                        <Text style={{ fontSize: 13 }}>{dayjs(reminder.time).format('MM-DD HH:mm')}</Text>
-                        <br />
-                        <Tag style={{ fontSize: 11 }}>{channelLabel[reminder.channel] || reminder.channel}</Tag>
+                        <p className="text-xs font-medium">{dayjs(r.time).format('MM-DD HH:mm')}</p>
+                        <Badge variant="secondary" className="text-[10px] px-1 h-auto">{channelLabel[r.channel] || r.channel}</Badge>
                       </div>
-                    </Space>
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Empty description="暂无提醒" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '8px 0' }} />
-            )}
+                    </div>
+                  ))}
+                </div>
+              ) : <EmptyState description="暂无提醒" />}
+            </CardContent>
           </Card>
 
           {/* AI Suggestion */}
           {task.aiSuggestion && (
-            <Card
-              title={<Space><RobotOutlined style={{ color: 'var(--primary)' }} /> AI 建议</Space>}
-              size="small"
-            >
-              <div style={{
-                background: 'linear-gradient(135deg, #f0f5ff, #e6f4ff)',
-                borderRadius: 'var(--radius-sm)',
-                padding: 14,
-                border: '1px solid #d6e4ff',
-              }}>
-                <Text style={{ fontSize: 13, lineHeight: 1.7 }}>{task.aiSuggestion}</Text>
-              </div>
+            <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-blue-50/50">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" />AI 建议</CardTitle></CardHeader>
+              <CardContent><p className="text-xs text-blue-800 leading-relaxed">{task.aiSuggestion}</p></CardContent>
             </Card>
-          )}
-        </Col>
-      </Row>
-
-      {/* Sticky Action Bar */}
-      <div style={{
-        position: 'sticky',
-        bottom: 0,
-        background: '#fff',
-        padding: '12px 20px',
-        marginTop: 16,
-        borderTop: '1px solid var(--border-light)',
-        borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
-        boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-          {task.status !== 'CANCELLED' && (
-            <Button
-              type={task.status === 'TODO' ? 'primary' : 'default'}
-              size="large"
-              icon={task.status === 'DONE' ? <CheckCircleOutlined /> : task.status === 'DOING' ? <SyncOutlined /> : <SendOutlined />}
-              onClick={() => handleChangeStatus(nextStatus[task.status])}
-              style={{ minWidth: 140 }}
-            >
-              {task.status === 'TODO' && '开始处理'}
-              {task.status === 'DOING' && '标记完成'}
-              {task.status === 'DONE' && '已完成 ✓'}
-            </Button>
-          )}
-          {task.status !== 'CANCELLED' && task.status !== 'DONE' && (
-            <Button size="large" onClick={() => handleChangeStatus('CANCELLED')}>
-              取消任务
-            </Button>
-          )}
-          {task.status === 'CANCELLED' && (
-            <Button type="primary" size="large" onClick={() => handleChangeStatus('TODO')}>
-              重新打开
-            </Button>
           )}
         </div>
       </div>
 
-      {/* Edit Modal */}
-      <Modal
-        title="编辑任务"
-        open={editModalOpen}
-        onCancel={() => setEditModalOpen(false)}
-        footer={null}
-        width={560}
-        destroyOnClose
-      >
-        <Form form={editForm} layout="vertical" onFinish={handleSaveEdit}>
-          <Form.Item name="title" label="任务标题" rules={[{ required: true, message: '请输入标题' }]}>
-            <Input placeholder="输入任务标题" size="large" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={3} placeholder="输入任务描述（可选）" />
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="deadline" label="截止时间">
-                <DatePicker showTime style={{ width: '100%' }} size="large" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="priority" label="优先级">
-                <Select size="large">
-                  <Select.Option value="URGENT">🔥 紧急</Select.Option>
-                  <Select.Option value="HIGH">⚡ 高</Select.Option>
-                  <Select.Option value="MEDIUM">📌 中</Select.Option>
-                  <Select.Option value="LOW">📎 低</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="estimatedHours" label="预估耗时（小时）">
-            <InputNumber min={0} style={{ width: '100%' }} size="large" />
-          </Form.Item>
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block size="large" loading={savingEdit}>
-              保存修改
+      {/* Sticky Action Bar */}
+      <div className="sticky bottom-0 bg-white border-t border-slate-100 py-3 mt-4 -mx-4 px-4 rounded-t-xl shadow-lg z-30">
+        <div className="flex justify-center gap-3 flex-wrap max-w-4xl mx-auto">
+          {task.status !== 'CANCELLED' && (
+            <Button size="lg" variant={task.status === 'TODO' ? 'gradient' : 'default'} disabled={task.status === 'DONE'}
+              onClick={() => handleChangeStatus(ns)} className="min-w-[140px]">
+              {task.status === 'TODO' && <Send className="w-4 h-4 mr-1.5" />}
+              {task.status === 'DOING' && <CheckCircle2 className="w-4 h-4 mr-1.5" />}
+              {task.status === 'DONE' && <CheckCircle2 className="w-4 h-4 mr-1.5" />}
+              {stCfg.nextLabel}
             </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+          )}
+          {task.status !== 'CANCELLED' && task.status !== 'DONE' && (
+            <Button variant="outline" size="lg" onClick={() => handleChangeStatus('CANCELLED')}>取消任务</Button>
+          )}
+          {task.status === 'CANCELLED' && (
+            <Button variant="gradient" size="lg" onClick={() => handleChangeStatus('TODO')}>重新打开</Button>
+          )}
+        </div>
+      </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>编辑任务</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5"><Label>任务标题</Label><Input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>描述</Label><Textarea rows={3} value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>截止时间</Label><Input type="datetime-local" value={editForm.deadline} onChange={e => setEditForm(p => ({ ...p, deadline: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>优先级</Label>
+                <Select value={editForm.priority} onValueChange={v => setEditForm(p => ({ ...p, priority: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="URGENT">🔥 紧急</SelectItem>
+                    <SelectItem value="HIGH">⚡ 高</SelectItem>
+                    <SelectItem value="MEDIUM">📌 中</SelectItem>
+                    <SelectItem value="LOW">📎 低</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button className="w-full" onClick={saveEdit} loading={savingEdit}>保存修改</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

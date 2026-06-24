@@ -1,32 +1,16 @@
 import React from 'react'
-import { Table, Card, Tag, Button, Input, Space, message, Typography, Empty, Avatar, Statistic, Row, Col } from 'antd'
-import { SearchOutlined, UserOutlined, TeamOutlined, UserAddOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
+import { Badge } from '../../../components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
+import { Avatar, AvatarFallback } from '../../../components/ui/avatar'
+import { Skeleton } from '../../../components/ui/skeleton'
+import EmptyState from '../../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../../services/mockData'
 import http from '../../../services/api'
 import type { AdminUser } from '../../../services/mockData'
-
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
-
-const { Title, Text } = Typography
-
-const roleColor: Record<string, string> = {
-  ADMIN: 'red',
-  USER: 'blue',
-}
-
-const statusColor: Record<string, string> = {
-  ACTIVE: 'success',
-  DISABLED: 'error',
-}
-
-const statusLabel: Record<string, string> = {
-  ACTIVE: '正常',
-  DISABLED: '已禁用',
-}
+import { Search, CheckCircle2, XCircle, Users } from 'lucide-react'
 
 export default function AdminUsers() {
   const [users, setUsers] = React.useState<AdminUser[]>([])
@@ -34,10 +18,11 @@ export default function AdminUsers() {
   const [search, setSearch] = React.useState('')
   const [toggling, setToggling] = React.useState<string | null>(null)
 
-  const loadUsers = React.useCallback(async (searchValue?: string) => {
+  const loadUsers = React.useCallback(async (s?: string) => {
     setLoading(true)
     try {
-      const params = searchValue ? { search: searchValue } : undefined
+      const params: Record<string, any> = {}
+      if (s) params.search = s
       if (isMockMode()) {
         const res = await mockApi.getAdminUsers(params)
         if (res.code === 0) setUsers(res.data.list)
@@ -45,36 +30,18 @@ export default function AdminUsers() {
         const res: any = await http.get('/admin/users', { params })
         setUsers(res.data.list)
       }
-    } catch {
-      message.error('获取用户列表失败')
-    } finally {
-      setLoading(false)
-    }
+    } catch { } finally { setLoading(false) }
   }, [])
 
   React.useEffect(() => { loadUsers() }, [loadUsers])
 
-  const handleToggleStatus = async (userId: string, currentStatus: string) => {
+  const toggleStatus = async (userId: string, currentStatus: string) => {
     setToggling(userId)
     try {
-      if (isMockMode()) {
-        await mockApi.toggleUserStatus(userId)
-      } else {
-        await http.put(`/admin/users/${userId}/toggle`)
-      }
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === userId
-            ? { ...u, status: currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' }
-            : u,
-        ),
-      )
-      message.success(`用户状态已${currentStatus === 'ACTIVE' ? '禁用' : '启用'}`)
-    } catch {
-      message.error('操作失败')
-    } finally {
-      setToggling(null)
-    }
+      if (isMockMode()) await mockApi.toggleUserStatus(userId)
+      else await http.put(`/admin/users/${userId}/toggle`)
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' } : u))
+    } catch { } finally { setToggling(null) }
   }
 
   const stats = React.useMemo(() => {
@@ -84,134 +51,103 @@ export default function AdminUsers() {
     return { total, active, disabled: total - active, admins }
   }, [users])
 
-  const columns = [
-    {
-      title: '用户',
-      key: 'user',
-      render: (_: unknown, record: AdminUser) => (
-        <Space>
-          <Avatar
-            size={32}
-            style={{
-              background: record.role === 'ADMIN'
-                ? 'linear-gradient(135deg, #1677ff, #4096ff)'
-                : 'linear-gradient(135deg, #52c41a, #73d13d)',
-              fontSize: 14,
-              fontWeight: 600,
-            }}
-          >
-            {(record.nickname || record.username)[0].toUpperCase()}
-          </Avatar>
-          <div>
-            <Text strong style={{ fontSize: 14 }}>{record.nickname}</Text>
-            <br />
-            <Text style={{ fontSize: 12, color: '#999' }}>@{record.username}</Text>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: '角色',
-      dataIndex: 'role',
-      key: 'role',
-      width: 100,
-      render: (role: string) => (
-        <Tag color={roleColor[role]} style={{ fontSize: 11 }}>
-          {role === 'ADMIN' ? '管理员' : '普通用户'}
-        </Tag>
-      ),
-    },
-    {
-      title: '注册时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 160,
-      render: (t: string) => (
-        <Text style={{ fontSize: 12 }}>{dayjs(t).format('YYYY-MM-DD HH:mm')}</Text>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (s: string) => (
-        <Tag color={statusColor[s]} icon={s === 'ACTIVE' ? <CheckCircleOutlined /> : <StopOutlined />}>
-          {statusLabel[s]}
-        </Tag>
-      ),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 100,
-      render: (_: unknown, record: AdminUser) => (
-        <Button
-          type={record.status === 'ACTIVE' ? 'default' : 'primary'}
-          size="small"
-          danger={record.status === 'ACTIVE'}
-          loading={toggling === record.id}
-          onClick={() => handleToggleStatus(record.id, record.status)}
-          style={{ borderRadius: 'var(--radius-sm)' }}
-        >
-          {record.status === 'ACTIVE' ? '禁用' : '启用'}
-        </Button>
-      ),
-    },
-  ]
-
   return (
     <div className="animate-fade-in">
-      {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <Title level={4} style={{ margin: 0, marginBottom: 4 }}>👥 用户管理</Title>
-        <Text style={{ color: '#999', fontSize: 13 }}>共 {stats.total} 个用户，{stats.active} 个活跃</Text>
+      <div className="mb-5">
+        <h3 className="text-lg font-bold text-slate-900">👥 用户管理</h3>
+        <p className="text-sm text-slate-400 mt-0.5">共 {stats.total} 个用户，{stats.active} 个活跃</p>
       </div>
 
-      {/* Stats */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        <Col xs={8}>
-          <Card size="small" bodyStyle={{ padding: '12px 16px', textAlign: 'center' }}>
-            <Statistic title="总用户" value={stats.total} valueStyle={{ fontSize: 22, fontWeight: 700 }} />
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {[
+          { label: '总用户', value: stats.total, color: '' },
+          { label: '活跃', value: stats.active, color: 'text-emerald-600' },
+          { label: '管理员', value: stats.admins, color: 'text-blue-600' },
+        ].map((s, i) => (
+          <Card key={i} className="border-slate-100">
+            <CardContent className="p-3 text-center">
+              <p className="text-[11px] text-slate-500">{s.label}</p>
+              <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+            </CardContent>
           </Card>
-        </Col>
-        <Col xs={8}>
-          <Card size="small" bodyStyle={{ padding: '12px 16px', textAlign: 'center' }}>
-            <Statistic title="活跃" value={stats.active} valueStyle={{ fontSize: 22, fontWeight: 700, color: 'var(--success)' }} />
-          </Card>
-        </Col>
-        <Col xs={8}>
-          <Card size="small" bodyStyle={{ padding: '12px 16px', textAlign: 'center' }}>
-            <Statistic title="管理员" value={stats.admins} valueStyle={{ fontSize: 22, fontWeight: 700, color: 'var(--primary)' }} />
-          </Card>
-        </Col>
-      </Row>
+        ))}
+      </div>
 
-      {/* Search */}
-      <Card bodyStyle={{ padding: 12, marginBottom: 16 }} style={{ borderRadius: 'var(--radius-md)' }}>
-        <Input.Search
-          placeholder="搜索用户名或昵称..."
-          allowClear
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          onSearch={value => loadUsers(value || undefined)}
-          onPressEnter={() => loadUsers(search || undefined)}
-          style={{ maxWidth: 400 }}
-          prefix={<SearchOutlined style={{ color: '#999' }} />}
-        />
+      <Card className="border-slate-100 mb-4">
+        <CardContent className="p-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input placeholder="搜索用户名或昵称..." value={search} onChange={e => setSearch(e.target.value)}
+              className="pl-10" onKeyDown={e => { if (e.key === 'Enter') loadUsers(search || undefined) }} />
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card bodyStyle={{ padding: 0 }} style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-        <Table
-          dataSource={users}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-          size="middle"
-          locale={{ emptyText: <Empty description="暂无用户" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
-        />
+      <Card className="border-slate-100">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-4 space-y-3"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs text-slate-400">
+                    <th className="py-3 px-4 font-medium">用户</th>
+                    <th className="py-3 px-4 font-medium">角色</th>
+                    <th className="py-3 px-4 font-medium hidden md:table-cell">注册时间</th>
+                    <th className="py-3 px-4 font-medium">状态</th>
+                    <th className="py-3 px-4 font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <td className="py-2.5 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className={u.role === 'ADMIN' ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs' : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs'}>
+                              {(u.nickname || u.username)[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-slate-900">{u.nickname}</p>
+                            <p className="text-xs text-slate-400">@{u.username}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <Badge variant={u.role === 'ADMIN' ? 'destructive' : 'default'} className="text-[10px]">
+                          {u.role === 'ADMIN' ? '管理员' : '普通用户'}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-4 text-xs text-slate-400 hidden md:table-cell">
+                        {dayjs(u.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <Badge variant={u.status === 'ACTIVE' ? 'success' : 'destructive'} className="text-[10px] gap-1">
+                          {u.status === 'ACTIVE' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          {u.status === 'ACTIVE' ? '正常' : '已禁用'}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <Button
+                          variant={u.status === 'ACTIVE' ? 'outline' : 'default'}
+                          size="sm"
+                          className={u.status === 'ACTIVE' ? 'text-red-500 border-red-200 hover:bg-red-50' : ''}
+                          loading={toggling === u.id}
+                          onClick={() => toggleStatus(u.id, u.status)}
+                        >
+                          {u.status === 'ACTIVE' ? '禁用' : '启用'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {users.length === 0 && <div className="py-12"><EmptyState description="暂无用户" /></div>}
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>
   )

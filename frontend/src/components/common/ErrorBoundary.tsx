@@ -1,5 +1,6 @@
 import React from 'react'
-import { Result, Button } from 'antd'
+import { Button } from '../ui/button'
+import { AlertTriangle } from 'lucide-react'
 
 interface Props {
   children: React.ReactNode
@@ -27,17 +28,15 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 48, display: 'flex', justifyContent: 'center' }}>
-          <Result
-            status="error"
-            title="页面渲染出错"
-            subTitle={this.state.error?.message || '发生了意外错误'}
-            extra={
-              <Button type="primary" onClick={this.handleReset}>
-                重试
-              </Button>
-            }
-          />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center max-w-sm">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">页面渲染出错</h2>
+            <p className="text-sm text-slate-500 mb-6">{this.state.error?.message || '发生了意外错误'}</p>
+            <Button onClick={this.handleReset}>重试</Button>
+          </div>
         </div>
       )
     }

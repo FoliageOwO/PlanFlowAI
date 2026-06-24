@@ -1,8 +1,8 @@
 import React from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Spin } from 'antd'
 import { useAuthStore } from '../stores/authStore'
 import ErrorBoundary from '../components/common/ErrorBoundary'
+import { Spinner } from '../components/ui/spinner'
 import AppLayout from './AppLayout'
 import AdminLayout from './AdminLayout'
 import Login from '../pages/Login'
@@ -68,8 +68,8 @@ export default function AppRouter() {
 
   if (!ready) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" />
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <Spinner size={40} />
       </div>
     )
   }
@@ -78,7 +78,6 @@ export default function AppRouter() {
     <Routes>
       <Route path="/login" element={<PublicRoute><PageWrapper><Login /></PageWrapper></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><PageWrapper><Register /></PageWrapper></PublicRoute>} />
-      {/* User routes */}
       <Route path="/" element={<ProtectedRoute><UserRoute><AppLayout /></UserRoute></ProtectedRoute>}>
         <Route index element={<PageWrapper><Dashboard /></PageWrapper>} />
         <Route path="input" element={<PageWrapper><Input /></PageWrapper>} />
@@ -90,7 +89,6 @@ export default function AppRouter() {
         <Route path="settings" element={<PageWrapper><Settings /></PageWrapper>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
-      {/* Admin routes */}
       <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
         <Route index element={<PageWrapper><AdminDashboard /></PageWrapper>} />
         <Route path="users" element={<PageWrapper><AdminUsers /></PageWrapper>} />

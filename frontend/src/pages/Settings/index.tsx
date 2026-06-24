@@ -1,208 +1,128 @@
 import React from 'react'
-import { Card, Form, Input, Button, Switch, Divider, Typography, message, Space, Tag, Row, Col, Avatar } from 'antd'
-import {
-  UserOutlined, LogoutOutlined, BellOutlined, MobileOutlined,
-  SafetyOutlined, InfoCircleOutlined, MailOutlined,
-} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
+import { Badge } from '../../components/ui/badge'
+import { Switch } from '../../components/ui/switch'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Separator } from '../../components/ui/separator'
+import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
+import { User, Bell, Smartphone, LogOut, Shield } from 'lucide-react'
 
-const { Title, Text } = Typography
-
-export default function Settings() {
+export default function SettingsPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
-  const [form] = Form.useForm()
+  const [nickname, setNickname] = React.useState(user?.nickname || '')
   const [saving, setSaving] = React.useState(false)
   const [inAppNotify, setInAppNotify] = React.useState(true)
   const [localNotify, setLocalNotify] = React.useState(false)
+  const [message, setMessage] = React.useState('')
 
-  React.useEffect(() => {
-    if (user) {
-      form.setFieldsValue({ nickname: user.nickname })
-    }
-  }, [user, form])
-
-  const handleSaveProfile = async (values: { nickname: string }) => {
+  const handleSave = async () => {
+    if (!nickname.trim()) return
     setSaving(true)
     try {
-      if (isMockMode()) {
-        await mockApi.updateProfile(values)
-      } else {
-        await http.put('/auth/user/profile', values)
-      }
-      message.success('昵称修改成功')
+      if (isMockMode()) await mockApi.updateProfile({ nickname })
+      else await http.put('/auth/user/profile', { nickname })
+      setMessage('昵称修改成功')
     } catch {
-      message.error('修改失败')
+      setMessage('修改失败')
     } finally {
       setSaving(false)
+      setTimeout(() => setMessage(''), 2000)
     }
   }
 
   const handleLogout = () => {
     logout()
-    message.success('已退出登录')
     navigate('/login')
   }
 
   const firstLetter = (user?.nickname || user?.username || '?')[0].toUpperCase()
+  const isAdmin = user?.role === 'ADMIN'
 
   return (
-    <div className="page-container" style={{ padding: '16px 0', maxWidth: 640, margin: '0 auto' }}>
-      <Title level={4} style={{ marginBottom: 20 }}>⚙️ 设置</Title>
+    <div className="py-4 max-w-lg mx-auto animate-fade-in">
+      <h2 className="text-xl font-bold text-slate-900 mb-5">⚙️ 设置</h2>
 
-      {/* User Profile Card */}
-      <Card style={{ marginBottom: 16, borderRadius: 'var(--radius-lg)' }} bodyStyle={{ padding: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20 }}>
-          <Avatar
-            size={64}
-            style={{
-              background: user?.role === 'ADMIN'
-                ? 'linear-gradient(135deg, #1677ff, #4096ff)'
-                : 'linear-gradient(135deg, #52c41a, #73d13d)',
-              fontSize: 28,
-              fontWeight: 700,
-              boxShadow: 'var(--shadow-md)',
-            }}
-          >
-            {firstLetter}
-          </Avatar>
-          <div>
-            <Title level={5} style={{ margin: 0, marginBottom: 4 }}>{user?.nickname || user?.username}</Title>
-            <Space>
-              <Text style={{ color: '#999', fontSize: 13 }}>@{user?.username}</Text>
-              <Tag color={user?.role === 'ADMIN' ? 'blue' : 'green'} style={{ fontSize: 11 }}>
-                {user?.role === 'ADMIN' ? '管理员' : '用户'}
-              </Tag>
-            </Space>
+      {/* User Profile */}
+      <Card className="border-slate-100 mb-4">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar className="h-14 w-14">
+              <AvatarFallback className={isAdmin
+                ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl'
+                : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xl'
+              }>{firstLetter}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold text-slate-900">{user?.nickname || user?.username}</h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-sm text-slate-400">@{user?.username}</span>
+                <Badge variant={isAdmin ? 'default' : 'success'} className="text-[10px] px-1.5 py-0 h-auto">
+                  {isAdmin ? '管理员' : '用户'}
+                </Badge>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <Divider style={{ margin: '16px 0' }} />
+          <Separator className="mb-4" />
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSaveProfile}
-          requiredMark={false}
-        >
-          <Row gutter={16}>
-            <Col xs={24} sm={16}>
-              <Form.Item
-                name="nickname"
-                label="昵称"
-                rules={[{ required: true, message: '请输入昵称' }]}
-              >
-                <Input
-                  prefix={<UserOutlined style={{ color: '#999' }} />}
-                  placeholder="输入昵称"
-                  size="large"
-                  style={{ borderRadius: 'var(--radius-sm)' }}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="&nbsp;">
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={saving}
-                  size="large"
-                  block
-                  style={{ borderRadius: 'var(--radius-sm)' }}
-                >
-                  保存修改
-                </Button>
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
+          <div className="space-y-1.5">
+            <Label>昵称</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input className="pl-10" placeholder="输入昵称" value={nickname} onChange={e => setNickname(e.target.value)} />
+              </div>
+              <Button onClick={handleSave} loading={saving}>保存</Button>
+            </div>
+          </div>
+          {message && <p className="text-xs text-blue-600 mt-2">{message}</p>}
+        </CardContent>
       </Card>
 
       {/* Notification Settings */}
-      <Card
-        title={<Space><BellOutlined /> 通知设置</Space>}
-        style={{ marginBottom: 16, borderRadius: 'var(--radius-md)' }}
-        size="small"
-      >
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 0',
-        }}>
-          <Space size={12}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: '#e6f4ff', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 18,
-            }}>
-              <BellOutlined style={{ color: 'var(--primary)' }} />
+      <Card className="border-slate-100 mb-4">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-blue-600" />通知设置</CardTitle></CardHeader>
+        <CardContent className="space-y-1">
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center"><Bell className="w-4 h-4 text-blue-600" /></div>
+              <div>
+                <p className="text-sm font-medium text-slate-700">站内通知</p>
+                <p className="text-xs text-slate-400">接收系统内的通知消息</p>
+              </div>
             </div>
-            <div>
-              <Text strong style={{ fontSize: 14 }}>站内通知</Text>
-              <br />
-              <Text style={{ fontSize: 12, color: '#999' }}>接收系统内的通知消息</Text>
+            <Switch checked={inAppNotify} onCheckedChange={setInAppNotify} />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center"><Smartphone className="w-4 h-4 text-orange-500" /></div>
+              <div>
+                <p className="text-sm font-medium text-slate-700">本地通知</p>
+                <p className="text-xs text-slate-400">接收浏览器推送通知（仅 Android App）</p>
+              </div>
             </div>
-          </Space>
-          <Switch checked={inAppNotify} onChange={setInAppNotify} />
-        </div>
-
-        <Divider style={{ margin: '4px 0' }} />
-
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 0',
-        }}>
-          <Space size={12}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: '#fffbe6', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 18,
-            }}>
-              <MobileOutlined style={{ color: 'var(--warning)' }} />
-            </div>
-            <div>
-              <Text strong style={{ fontSize: 14 }}>本地通知</Text>
-              <br />
-              <Text style={{ fontSize: 12, color: '#999' }}>接收浏览器推送通知（仅 Android App）</Text>
-            </div>
-          </Space>
-          <Switch checked={localNotify} onChange={setLocalNotify} />
-        </div>
+            <Switch checked={localNotify} onCheckedChange={setLocalNotify} />
+          </div>
+        </CardContent>
       </Card>
 
       {/* Account */}
-      <Card
-        title={<Space><SafetyOutlined /> 账号</Space>}
-        style={{ marginBottom: 16, borderRadius: 'var(--radius-md)' }}
-        size="small"
-      >
-        <Button
-          danger
-          block
-          size="large"
-          icon={<LogoutOutlined />}
-          onClick={handleLogout}
-          style={{
-            borderRadius: 'var(--radius-sm)',
-            height: 46,
-            fontSize: 15,
-          }}
-        >
-          退出登录
-        </Button>
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <Text style={{ fontSize: 12, color: '#bbb' }}>
-            PlanFlow AI v1.0
-          </Text>
-        </div>
+      <Card className="border-slate-100">
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="w-4 h-4 text-blue-600" />账号</CardTitle></CardHeader>
+        <CardContent>
+          <Button variant="destructive" size="lg" className="w-full" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" /> 退出登录
+          </Button>
+          <p className="text-center text-xs text-slate-300 mt-3">PlanFlow AI v1.0</p>
+        </CardContent>
       </Card>
     </div>
   )

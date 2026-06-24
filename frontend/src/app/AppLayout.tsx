@@ -1,32 +1,25 @@
 import React from 'react'
-import { Layout, Badge, Dropdown, Avatar, Menu } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import {
-  HomeOutlined,
-  FileTextOutlined,
-  UnorderedListOutlined,
-  ClockCircleOutlined,
-  BellOutlined,
-  SettingOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  DashboardOutlined,
-  AppstoreOutlined,
-} from '@ant-design/icons'
 import { useAuthStore } from '../stores/authStore'
-
-const { Header, Content } = Layout
+import { Button } from '../components/ui/button'
+import { Badge } from '../components/ui/badge'
+import { Avatar, AvatarFallback } from '../components/ui/avatar'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu'
+import {
+  Home, ListTodo, FileText, Clock, Bell,
+  User, LogOut, Settings, LayoutDashboard,
+} from 'lucide-react'
 
 const navItems = [
-  { key: '/', icon: <HomeOutlined />, label: '首页' },
-  { key: '/tasks', icon: <UnorderedListOutlined />, label: '任务' },
-  { key: '/input', icon: <FileTextOutlined />, label: '输入' },
-  { key: '/timeline', icon: <ClockCircleOutlined />, label: '时间轴' },
-  { key: '/notifications', icon: <BellOutlined />, label: '通知' },
+  { key: '/', icon: Home, label: '首页' },
+  { key: '/tasks', icon: ListTodo, label: '任务' },
+  { key: '/input', icon: FileText, label: '输入' },
+  { key: '/timeline', icon: Clock, label: '时间轴' },
+  { key: '/notifications', icon: Bell, label: '通知' },
 ]
-
-const headerNavItems = navItems.slice(0, 4)
 
 export default function AppLayout() {
   const navigate = useNavigate()
@@ -35,7 +28,6 @@ export default function AppLayout() {
   const [unreadCount, setUnreadCount] = React.useState(0)
 
   React.useEffect(() => {
-    // Fetch unread count on mount and periodically
     const loadUnread = async () => {
       try {
         const { mockApi, isMockMode } = await import('../services/mockData')
@@ -43,249 +35,183 @@ export default function AppLayout() {
           const res = await mockApi.getUnreadCount()
           setUnreadCount(res.data)
         }
-      } catch {
-        // silent
-      }
+      } catch { /* silent */ }
     }
     loadUnread()
-    const timer = setInterval(loadUnread, 10000)
+    const timer = setInterval(loadUnread, 15000)
     return () => clearInterval(timer)
   }, [])
-
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: (
-        <div style={{ lineHeight: 1.4 }}>
-          <div style={{ fontWeight: 600 }}>{user?.nickname || user?.username}</div>
-          <div style={{ fontSize: 12, color: '#999' }}>{user?.role === 'ADMIN' ? '管理员' : '用户'}</div>
-        </div>
-      ),
-      disabled: true,
-      style: { cursor: 'default', padding: '8px 12px' },
-    },
-    { type: 'divider' as const },
-    ...(user?.role === 'ADMIN'
-      ? [{ key: 'admin', icon: <DashboardOutlined />, label: '管理后台' }]
-      : []),
-    { key: 'settings', icon: <SettingOutlined />, label: '设置' },
-    { type: 'divider' as const },
-    { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true },
-  ]
-
-  const handleUserMenuClick = ({ key }: { key: string }) => {
-    if (key === 'admin') navigate('/admin')
-    else if (key === 'settings') navigate('/settings')
-    else if (key === 'logout') { logout(); navigate('/login') }
-  }
 
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
 
+  const firstLetter = (user?.nickname || user?.username || '?')[0].toUpperCase()
+  const isAdmin = user?.role === 'ADMIN'
+
   return (
-    <Layout style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* ─── Desktop Header ─── */}
-      <Header className="hide-on-mobile" style={{
-        background: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px',
-        boxShadow: 'var(--shadow-sm)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        height: 56,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+    <div className="min-h-screen bg-slate-50 font-sans">
+      {/* Desktop Header */}
+      <header className="hidden md:flex items-center justify-between h-14 px-6 bg-white border-b border-slate-100 sticky top-0 z-50">
+        <div className="flex items-center gap-8">
           {/* Logo */}
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, var(--primary), var(--primary-light))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              cursor: 'pointer',
-              letterSpacing: -0.5,
-            }}
+          <button
             onClick={() => navigate('/')}
+            className="text-lg font-bold text-blue-700 tracking-tight hover:text-blue-800 transition-colors"
           >
             PlanFlowAI
-          </div>
-          {/* Nav */}
-          <Menu
-            mode="horizontal"
-            selectedKeys={[location.pathname]}
-            style={{ border: 'none', flex: 1, minWidth: 400, background: 'transparent' }}
-            items={headerNavItems.map(item => ({
-              key: item.key,
-              icon: item.icon,
-              label: item.label,
-              onClick: () => navigate(item.key),
-            }))}
-          />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-            <BellOutlined
-              style={{ fontSize: 20, cursor: 'pointer', color: '#666', transition: 'color 0.2s' }}
-              onClick={() => navigate('/notifications')}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#666')}
-            />
-          </Badge>
-          <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              cursor: 'pointer',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'background 0.2s',
-            }}
-              className="user-dropdown-trigger"
-            >
-              <Avatar
-                size={32}
-                style={{
-                  background: user?.role === 'ADMIN'
-                    ? 'linear-gradient(135deg, #1677ff, #4096ff)'
-                    : 'linear-gradient(135deg, #52c41a, #73d13d)',
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                {(user?.nickname || user?.username || '?')[0].toUpperCase()}
-              </Avatar>
-              <span style={{ fontSize: 14, fontWeight: 500, color: '#333' }}>
-                {user?.nickname || user?.username}
-              </span>
-            </div>
-          </Dropdown>
-        </div>
-      </Header>
+          </button>
 
-      {/* ─── Mobile Top Bar ─── */}
-      <div className="show-on-mobile" style={{
-        background: '#fff',
-        padding: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        boxShadow: 'var(--shadow-sm)',
-        height: 48,
-      }}>
-        <div style={{
-          fontSize: 18,
-          fontWeight: 700,
-          background: 'linear-gradient(135deg, var(--primary), var(--primary-light))',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          PlanFlowAI
+          {/* Desktop Nav */}
+          <nav className="flex items-center gap-1">
+            {navItems.map(item => {
+              const active = isActive(item.key)
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => navigate(item.key)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150
+                    ${active
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              )
+            })}
+          </nav>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Badge count={unreadCount} size="small">
-            <BellOutlined
-              style={{ fontSize: 20, cursor: 'pointer', color: '#666' }}
-              onClick={() => navigate('/notifications')}
-            />
-          </Badge>
-          <MenuOutlined
-            style={{ fontSize: 20, cursor: 'pointer', color: '#666' }}
+
+        {/* Right side */}
+        <div className="flex items-center gap-3">
+          {/* Notification bell */}
+          <button
+            onClick={() => navigate('/notifications')}
+            className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold text-white bg-red-500 rounded-full">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* User dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className={isAdmin
+                    ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs'
+                    : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs'
+                  }>
+                    {firstLetter}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium text-slate-700 hidden sm:block">
+                  {user?.nickname || user?.username}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">{user?.nickname || user?.username}</span>
+                  <span className="text-xs text-slate-400 font-normal">
+                    {isAdmin ? '管理员' : '用户'}
+                  </span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  管理后台
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="w-4 h-4 mr-2" />
+                设置
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => { logout(); navigate('/login') }}
+                className="text-red-600 focus:text-red-700 focus:bg-red-50"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                退出登录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+
+      {/* Mobile Top Bar */}
+      <div className="md:hidden flex items-center justify-between h-12 px-4 bg-white border-b border-slate-100 sticky top-0 z-50">
+        <span className="text-lg font-bold text-blue-700">PlanFlowAI</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/notifications')}
+            className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[10px] font-semibold text-white bg-red-500 rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => navigate('/settings')}
-          />
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+          >
+            <User className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* ─── Main Content ─── */}
-      <Content style={{
-        padding: '0 16px 80px',
-        maxWidth: 'var(--max-width)',
-        margin: '0 auto',
-        width: '100%',
-        minHeight: 'calc(100vh - 56px)',
-      }}>
+      {/* Main Content */}
+      <main className="px-4 pb-24 md:pb-8 max-w-6xl mx-auto w-full min-h-[calc(100vh-56px)]">
         <Outlet />
-      </Content>
+      </main>
 
-      {/* ─── Mobile Bottom Nav ─── */}
-      <div className="show-on-mobile" style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: '#fff',
-        borderTop: '1px solid var(--border-light)',
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        height: 56,
-        zIndex: 100,
-        paddingBottom: 0,
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.06)',
-      }}>
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center h-14 z-50 pb-safe">
         {navItems.map(item => {
           const active = isActive(item.key)
+          const Icon = item.icon
           return (
-            <div
+            <button
               key={item.key}
               onClick={() => navigate(item.key)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 2,
-                cursor: 'pointer',
-                padding: '4px 12px',
-                color: active ? 'var(--primary)' : '#999',
-                fontSize: 10,
-                transition: 'color 0.2s',
-                position: 'relative',
-              }}
+              className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 min-w-[48px] min-h-[48px] transition-colors ${
+                active ? 'text-blue-600' : 'text-slate-400'
+              }`}
             >
               {item.key === '/notifications' ? (
-                <Badge count={unreadCount} size="small" offset={[4, -2]}>
-                  <div style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</div>
-                </Badge>
-              ) : (
-                <div style={{
-                  fontSize: 20,
-                  lineHeight: 1,
-                  transition: 'transform 0.2s',
-                }}>
-                  {item.icon}
+                <div className="relative">
+                  <Icon className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[10px] font-semibold text-white bg-red-500 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
+              ) : (
+                <Icon className="w-5 h-5" />
               )}
-              <span style={{
-                fontWeight: active ? 600 : 400,
-                fontSize: 10,
-                marginTop: 2,
-              }}>
+              <span className={`text-[10px] font-medium ${active ? 'font-semibold' : ''}`}>
                 {item.label}
               </span>
-              {active && (
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 20,
-                  height: 2,
-                  background: 'var(--primary)',
-                  borderRadius: '0 0 2px 2px',
-                }} />
-              )}
-            </div>
+            </button>
           )
         })}
-      </div>
-    </Layout>
+      </nav>
+    </div>
   )
 }

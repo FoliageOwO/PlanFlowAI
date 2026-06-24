@@ -1,8 +1,6 @@
-import React from 'react'
-import { Empty, Button, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
-
-const { Text } = Typography
+import { Button } from '../ui/button'
+import { Inbox } from 'lucide-react'
 
 interface Props {
   description?: string
@@ -30,19 +28,16 @@ export default function EmptyState({
   }
 
   return (
-    <div style={{ padding: '32px 0' }}>
-      <Empty
-        image={icon || Empty.PRESENTED_IMAGE_SIMPLE}
-        description={
-          <Text style={{ color: '#999', fontSize: 14 }}>{description}</Text>
-        }
-      >
-        {actionText && (
-          <Button type="primary" onClick={handleAction}>
-            {actionText}
-          </Button>
-        )}
-      </Empty>
+    <div className="flex flex-col items-center justify-center py-16">
+      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+        {icon || <Inbox className="w-8 h-8 text-gray-300" />}
+      </div>
+      <p className="text-sm text-slate-400 mb-4">{description}</p>
+      {actionText && (
+        <Button variant="outline" onClick={handleAction}>
+          {actionText}
+        </Button>
+      )}
     </div>
   )
 }

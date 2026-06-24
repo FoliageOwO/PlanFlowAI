@@ -1,16 +1,13 @@
 import React from 'react'
-import { Card, Tabs, Input, Button, Upload, message, Typography, Space, Row, Col, Tag } from 'antd'
-import {
-  InboxOutlined, SendOutlined, FileTextOutlined, PictureOutlined,
-  FilePdfOutlined, FileWordOutlined, RobotOutlined, BulbOutlined,
-} from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Button } from '../../components/ui/button'
+import { Textarea } from '../../components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { Badge } from '../../components/ui/badge'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-
-const { TextArea } = Input
-const { Dragger } = Upload
-const { Title, Text } = Typography
+import { Send, UploadCloud, FileText, Image, File, Sparkles, Lightbulb, CheckCircle2 } from 'lucide-react'
 
 const examples = [
   '下周五前提交软件项目立项书，包括背景、需求、功能模块、技术路线，周三答辩',
@@ -23,14 +20,16 @@ export default function InputPage() {
   const [searchParams] = useSearchParams()
   const [textValue, setTextValue] = React.useState(searchParams.get('content') || '')
   const [submitting, setSubmitting] = React.useState(false)
-  const [fileList, setFileList] = React.useState<any[]>([])
+  const [activeTab, setActiveTab] = React.useState('text')
+  const [dragOver, setDragOver] = React.useState(false)
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
+  const [error, setError] = React.useState('')
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const handleTextSubmit = async () => {
     const content = textValue.trim()
-    if (!content) {
-      message.warning('请输入任务内容')
-      return
-    }
+    if (!content) { setError('请输入任务内容'); return }
+    setError('')
     setSubmitting(true)
     try {
       if (isMockMode()) {
@@ -41,32 +40,50 @@ export default function InputPage() {
         navigate(`/jobs/${res.data.jobId}`)
       }
     } catch {
-      message.error('提交失败，请重试')
-    } finally {
-      setSubmitting(false)
+      setError('提交失败，请重试')
+    } finally { setSubmitting(false) }
+  }
+
+  const validateFile = (file: File): boolean => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    if (!validTypes.includes(file.type)) { setError('不支持的文件格式，仅支持 jpg/png/webp/pdf/docx'); return false }
+    if (file.size > 20 * 1024 * 1024) { setError('文件大小不能超过 20MB'); return false }
+    return true
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && validateFile(file)) {
+      setSelectedFile(file)
+      setError('')
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file && validateFile(file)) {
+      setSelectedFile(file)
+      setError('')
     }
   }
 
   const handleFileSubmit = async () => {
-    if (fileList.length === 0) {
-      message.warning('请先上传文件')
-      return
-    }
+    if (!selectedFile) { setError('请先选择文件'); return }
+    setError('')
     setSubmitting(true)
     try {
-      const file = fileList[0].originFileObj || fileList[0]
       if (isMockMode()) {
-        const res = await mockApi.createJob({ file })
+        const res = await mockApi.createJob({ file: selectedFile })
         navigate(`/jobs/${res.data.jobId}`)
       } else {
         const formData = new FormData()
-        formData.append('file', file)
-        // Infer sourceType from file mime type
-        const fileType = file.type || ''
-        let sourceType = 'FILE'
-        if (fileType.startsWith('image/')) sourceType = 'IMAGE'
-        else if (fileType === 'application/pdf') sourceType = 'PDF'
-        else if (fileType.includes('wordprocessingml')) sourceType = 'DOCX'
+        formData.append('file', selectedFile)
+        let sourceType = 'IMAGE'
+        if (selectedFile.type === 'application/pdf') sourceType = 'PDF'
+        else if (selectedFile.type.includes('wordprocessingml')) sourceType = 'DOCX'
         formData.append('sourceType', sourceType)
         const res: any = await http.post('/inputs/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -74,237 +91,114 @@ export default function InputPage() {
         navigate(`/jobs/${res.data.jobId}`)
       }
     } catch {
-      message.error('上传失败，请重试')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const fileProps = {
-    accept: '.jpg,.jpeg,.png,.webp,.pdf,.docx',
-    multiple: false,
-    fileList,
-    beforeUpload: (file: File) => {
-      const isValid = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)
-      if (!isValid) {
-        message.error('不支持的文件格式')
-        return Upload.LIST_IGNORE
-      }
-      const isLt20 = file.size / 1024 / 1024 < 20
-      if (!isLt20) {
-        message.error('文件大小不能超过20MB')
-        return Upload.LIST_IGNORE
-      }
-      setFileList([file])
-      return false
-    },
-    onRemove: () => setFileList([]),
+      setError('上传失败，请重试')
+    } finally { setSubmitting(false) }
   }
 
   return (
-    <div className="page-container" style={{ padding: '16px 0', maxWidth: 720, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0, marginBottom: 8 }}>📝 智能输入</Title>
-        <Text style={{ color: '#666', fontSize: 14 }}>
+    <div className="py-4 max-w-3xl mx-auto animate-fade-in">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-900">📝 智能输入</h2>
+        <p className="text-sm text-slate-500 mt-1">
           输入一段文本或上传文件，AI 会自动识别目标、拆解任务、设置截止时间并生成检查清单
-        </Text>
+        </p>
       </div>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card
-            style={{ borderRadius: 'var(--radius-md)' }}
-            bodyStyle={{ padding: 0 }}
-          >
-            <Tabs
-              defaultActiveKey="text"
-              size="large"
-              style={{ padding: '0 20px' }}
-              items={[
-                {
-                  key: 'text',
-                  label: (
-                    <span>
-                      <FileTextOutlined style={{ marginRight: 6 }} />
-                      文本输入
-                    </span>
-                  ),
-                  children: (
-                    <div style={{ padding: '0 0 20px' }}>
-                      <TextArea
-                        rows={8}
-                        placeholder="输入任务描述，例如：下周五前提交软件项目立项书..."
-                        value={textValue}
-                        onChange={e => setTextValue(e.target.value)}
-                        style={{
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: 15,
-                          lineHeight: 1.8,
-                          resize: 'vertical',
-                        }}
-                      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <Card className="border-slate-100">
+            <CardContent className="p-5">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="text" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> 文本输入
+                  </TabsTrigger>
+                  <TabsTrigger value="file" className="flex items-center gap-2">
+                    <Image className="w-4 h-4" /> 文件上传
+                  </TabsTrigger>
+                </TabsList>
 
-                      {/* Examples */}
-                      <div style={{ marginTop: 16, marginBottom: 16 }}>
-                        <Text style={{ fontSize: 12, color: '#999', display: 'block', marginBottom: 8 }}>
-                          💡 试试这些示例：
-                        </Text>
-                        <Space wrap size={[6, 6]}>
-                          {examples.map((ex, i) => (
-                            <Tag
-                              key={i}
-                              style={{
-                                cursor: 'pointer',
-                                padding: '4px 12px',
-                                fontSize: 12,
-                                borderRadius: 12,
-                                maxWidth: 240,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                              onClick={() => setTextValue(ex)}
-                            >
-                              {ex.slice(0, 30)}...
-                            </Tag>
-                          ))}
-                        </Space>
+                <TabsContent value="text" className="space-y-4 mt-0">
+                  <Textarea
+                    rows={8}
+                    placeholder="输入任务描述，例如：下周五前提交软件项目立项书..."
+                    value={textValue}
+                    onChange={e => { setTextValue(e.target.value); setError('') }}
+                    className="text-[15px] leading-relaxed"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-xs text-slate-400 self-center mr-1">试试：</span>
+                    {examples.map((ex, i) => (
+                      <Badge key={i} variant="outline" className="cursor-pointer hover:bg-blue-50 hover:border-blue-200 text-xs max-w-[200px] truncate"
+                        onClick={() => setTextValue(ex)}>
+                        {ex.slice(0, 25)}...
+                      </Badge>
+                    ))}
+                  </div>
+                  {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+                  <Button size="lg" onClick={handleTextSubmit} loading={submitting} className="gap-2">
+                    <Send className="w-4 h-4" /> 提交解析
+                  </Button>
+                </TabsContent>
+
+                <TabsContent value="file" className="space-y-4 mt-0">
+                  <div
+                    onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
+                      dragOver ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    <input ref={fileInputRef} type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf,.docx"
+                      onChange={handleFileSelect} />
+                    <UploadCloud className="w-12 h-12 mx-auto mb-3 text-blue-400" />
+                    <p className="text-sm font-medium text-slate-700">点击或拖拽文件到此区域</p>
+                    <p className="text-xs text-slate-400 mt-1">支持 jpg / png / webp / pdf / docx 格式，单文件不超过 20MB</p>
+                  </div>
+                  {selectedFile && (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 rounded-lg">
+                      <File className="w-5 h-5 text-blue-600" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-slate-400">{(selectedFile.size / 1024).toFixed(1)} KB</p>
                       </div>
-
-                      <Button
-                        type="primary"
-                        size="large"
-                        icon={<SendOutlined />}
-                        onClick={handleTextSubmit}
-                        loading={submitting}
-                        style={{ borderRadius: 'var(--radius-sm)', height: 44, padding: '0 28px' }}
-                      >
-                        提交解析
-                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>移除</Button>
                     </div>
-                  ),
-                },
-                {
-                  key: 'file',
-                  label: (
-                    <span>
-                      <PictureOutlined style={{ marginRight: 6 }} />
-                      文件上传
-                    </span>
-                  ),
-                  children: (
-                    <div style={{ padding: '0 0 20px' }}>
-                      <Dragger
-                        {...fileProps}
-                        style={{
-                          borderRadius: 'var(--radius-md)',
-                          background: '#fafafa',
-                          border: '2px dashed #d9d9d9',
-                          padding: 24,
-                        }}
-                      >
-                        <p style={{ fontSize: 48, color: 'var(--primary)', marginBottom: 8 }}>
-                          <InboxOutlined />
-                        </p>
-                        <p style={{ fontSize: 15, color: '#333', fontWeight: 500 }}>
-                          点击或拖拽文件到此区域
-                        </p>
-                        <p style={{ fontSize: 13, color: '#999', marginTop: 4 }}>
-                          支持 jpg / png / webp / pdf / docx 格式，单个文件不超过 20MB
-                        </p>
-                      </Dragger>
-
-                      {fileList.length > 0 && (
-                        <div style={{
-                          marginTop: 12,
-                          padding: '10px 14px',
-                          background: '#f6f8fa',
-                          borderRadius: 'var(--radius-sm)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                        }}>
-                          <FileTextOutlined style={{ color: 'var(--primary)' }} />
-                          <Text style={{ fontSize: 13 }}>{fileList[0].name}</Text>
-                          <Text style={{ fontSize: 12, color: '#999' }}>
-                            ({(fileList[0].size / 1024).toFixed(1)} KB)
-                          </Text>
-                        </div>
-                      )}
-
-                      <Button
-                        type="primary"
-                        size="large"
-                        icon={<SendOutlined />}
-                        onClick={handleFileSubmit}
-                        loading={submitting}
-                        disabled={fileList.length === 0}
-                        style={{
-                          marginTop: 16,
-                          borderRadius: 'var(--radius-sm)',
-                          height: 44,
-                          padding: '0 28px',
-                        }}
-                      >
-                        提交解析
-                      </Button>
-                    </div>
-                  ),
-                },
-              ]}
-            />
+                  )}
+                  {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+                  <Button size="lg" onClick={handleFileSubmit} loading={submitting} disabled={!selectedFile} className="gap-2">
+                    <Send className="w-4 h-4" /> 提交解析
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
           </Card>
-        </Col>
+        </div>
 
         {/* Tips sidebar */}
-        <Col xs={24} lg={8}>
-          <Card
-            size="small"
-            style={{
-              background: 'linear-gradient(135deg, #f0f5ff, #e6f4ff)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-            }}
-          >
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <div>
-                <RobotOutlined style={{ color: 'var(--primary)', fontSize: 18, marginRight: 8 }} />
-                <Text strong>AI 能做什么？</Text>
-              </div>
-              <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8 }}>
-                <BulbOutlined style={{ marginRight: 6, color: 'var(--warning)' }} />
-                从公告文本中提取任务和截止时间
-              </div>
-              <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8 }}>
-                <BulbOutlined style={{ marginRight: 6, color: 'var(--warning)' }} />
-                解析图片/PDF中的通知文字
-              </div>
-              <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8 }}>
-                <BulbOutlined style={{ marginRight: 6, color: 'var(--warning)' }} />
-                自动生成检查清单和提醒规则
-              </div>
-              <div style={{ fontSize: 13, color: '#555', lineHeight: 1.8 }}>
-                <BulbOutlined style={{ marginRight: 6, color: 'var(--warning)' }} />
-                识别时间冲突和潜在风险
-              </div>
-            </Space>
+        <div className="space-y-3">
+          <Card className="border-blue-100 bg-gradient-to-br from-blue-50 to-blue-50/50">
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" />AI 能做什么？</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {['从公告文本中提取任务和截止时间','解析图片/PDF中的通知文字','自动生成检查清单和提醒规则','识别时间冲突和潜在风险'].map((t,i) => (
+                <p key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                  <Lightbulb className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-0.5" />{t}
+                </p>
+              ))}
+            </CardContent>
           </Card>
-
-          <Card
-            size="small"
-            style={{ marginTop: 12, borderRadius: 'var(--radius-md)' }}
-          >
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <Text strong style={{ fontSize: 13 }}>支持的文件格式</Text>
-              <div><Tag color="blue">JPG</Tag><Tag color="blue">PNG</Tag><Tag color="blue">WebP</Tag></div>
-              <div><Tag color="green">PDF</Tag><Tag color="green">DOCX</Tag></div>
-              <Text style={{ fontSize: 12, color: '#999' }}>单文件最大 20MB</Text>
-            </Space>
+          <Card className="border-slate-100">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">支持的文件格式</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex gap-1.5"><Badge variant="default" className="text-xs">JPG</Badge><Badge variant="default" className="text-xs">PNG</Badge><Badge variant="default" className="text-xs">WebP</Badge></div>
+              <div className="flex gap-1.5"><Badge variant="success" className="text-xs">PDF</Badge><Badge variant="success" className="text-xs">DOCX</Badge></div>
+              <p className="text-xs text-slate-400">单文件最大 20MB</p>
+            </CardContent>
           </Card>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </div>
   )
 }

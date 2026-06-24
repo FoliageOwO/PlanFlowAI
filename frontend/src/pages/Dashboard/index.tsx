@@ -1,39 +1,31 @@
 import React from 'react'
-import {
-  Card, Input, Button, List, Tag, Empty, Spin, Typography, Row, Col, Skeleton, Statistic, Space, Tooltip, Divider
-} from 'antd'
-import {
-  SendOutlined, UploadOutlined, WarningOutlined, ClockCircleOutlined,
-  CheckCircleOutlined, ArrowRightOutlined, FileTextOutlined,
-  FireOutlined, CalendarOutlined, ExclamationCircleOutlined,
-  RobotOutlined, PlusOutlined,
-} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Badge } from '../../components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Skeleton } from '../../components/ui/skeleton'
+import EmptyState from '../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { TaskItem } from '../../services/mockData'
+import { Send, Upload, Clock, AlertTriangle, Plus, Calendar, Flame, CheckCircle2, Sparkles, ArrowRight, ChevronRight } from 'lucide-react'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-const { TextArea } = Input
-const { Text, Title } = Typography
-
-const priorityColor: Record<string, string> = {
-  URGENT: 'red',
-  HIGH: 'orange',
-  MEDIUM: 'blue',
-  LOW: 'default',
+const priorityLabel: Record<string, string> = { URGENT: '紧急', HIGH: '高', MEDIUM: '中', LOW: '低' }
+const priorityClass: Record<string, string> = {
+  URGENT: 'border-l-red-500 bg-red-50/30',
+  HIGH: 'border-l-orange-500 bg-orange-50/30',
+  MEDIUM: 'border-l-blue-500 bg-blue-50/30',
+  LOW: 'border-l-slate-300 bg-slate-50/50',
 }
-
-const priorityLabel: Record<string, string> = {
-  URGENT: '紧急',
-  HIGH: '高',
-  MEDIUM: '中',
-  LOW: '低',
+const priorityBadgeV: Record<string, 'destructive' | 'warning' | 'default' | 'secondary'> = {
+  URGENT: 'destructive', HIGH: 'warning', MEDIUM: 'default', LOW: 'secondary',
 }
 
 function TaskCard({ task, onClick }: { task: TaskItem; onClick: () => void }) {
@@ -41,46 +33,22 @@ function TaskCard({ task, onClick }: { task: TaskItem; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      style={{
-        padding: '12px 16px',
-        cursor: 'pointer',
-        borderRadius: 'var(--radius-sm)',
-        transition: 'all 0.2s',
-        border: '1px solid var(--border-light)',
-        marginBottom: 8,
-        background: '#fff',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'var(--primary)'
-        e.currentTarget.style.boxShadow = 'var(--shadow-sm)'
-        e.currentTarget.style.transform = 'translateX(4px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'var(--border-light)'
-        e.currentTarget.style.boxShadow = 'none'
-        e.currentTarget.style.transform = 'translateX(0)'
-      }}
+      className={`pl-3 pr-4 py-3 cursor-pointer rounded-lg border border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm hover:translate-x-1 transition-all duration-150 border-l-4 ${priorityClass[task.priority]}`}
     >
-      <div className={`priority-bar priority-${task.priority.toLowerCase()}`} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 4 }}>
-            {task.title}
-          </Text>
-          <Space size={12}>
-            <Text type={isOverdue ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
-              <ClockCircleOutlined style={{ marginRight: 4 }} />
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm text-slate-900 truncate">{task.title}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+              <Clock className="w-3 h-3" />
               {isOverdue
                 ? `已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天`
-                : dayjs(task.deadline).fromNow()
-              }
-            </Text>
-            <Tag color={priorityColor[task.priority]} style={{ fontSize: 11, margin: 0 }}>
+                : dayjs(task.deadline).fromNow()}
+            </span>
+            <Badge variant={priorityBadgeV[task.priority] || 'secondary'} className="text-[10px] px-1.5 py-0 h-auto">
               {priorityLabel[task.priority]}
-            </Tag>
-          </Space>
+            </Badge>
+          </div>
         </div>
       </div>
     </div>
@@ -109,9 +77,7 @@ export default function Dashboard() {
         setUpcomingTasks(res.data.upcoming)
         setOverdueTasks(res.data.overdue)
       }
-    } catch {
-      // silent
-    } finally {
+    } catch { /* silent */ } finally {
       setLoading(false)
     }
   }
@@ -127,290 +93,174 @@ export default function Dashboard() {
   const totalTasks = todayTasks.length + upcomingTasks.length + overdueTasks.length
 
   return (
-    <div className="page-container" style={{ padding: '16px 0' }}>
-      {/* ─── Hero / Quick Input Section ─── */}
-      <div style={{
-        background: 'linear-gradient(135deg, var(--primary) 0%, #4096ff 50%, #69b1ff 100%)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '28px 32px',
-        marginBottom: 24,
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Decorative circles */}
-        <div style={{
-          position: 'absolute',
-          top: -40,
-          right: -40,
-          width: 200,
-          height: 200,
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.08)',
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: -60,
-          left: '30%',
-          width: 160,
-          height: 160,
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.05)',
-        }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ marginBottom: 16 }}>
-            <Title level={4} style={{ color: '#fff', margin: 0, fontWeight: 700 }}>
-              👋 欢迎回来
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 4, display: 'block' }}>
-              输入一段文字或上传文件，AI 自动帮你生成任务计划
-            </Text>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <TextArea
-              rows={2}
-              placeholder="快速输入任务内容，例如：下周五前提交项目立项书..."
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              onPressEnter={handleQuickInput}
-              style={{
-                borderRadius: 'var(--radius-sm)',
-                border: 'none',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                fontSize: 15,
-                resize: 'none',
-              }}
-            />
-            <Button
-              type="default"
-              icon={<SendOutlined />}
-              onClick={handleQuickInput}
-              style={{
-                height: 52,
-                borderRadius: 'var(--radius-sm)',
-                background: 'rgba(255,255,255,0.9)',
-                border: 'none',
-                fontWeight: 600,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
-            >
+    <div className="py-4 space-y-5 animate-fade-in">
+      {/* Hero / Quick Input Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-blue-600 p-6 md:p-8">
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-1/3 w-48 h-48 rounded-full bg-white/5 translate-y-1/2" />
+        <div className="absolute top-1/2 left-1/4 w-24 h-24 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative z-10">
+          <h2 className="text-lg md:text-xl font-bold text-white mb-1 tracking-tight">欢迎回来</h2>
+          <p className="text-blue-100 text-sm mb-5">
+            输入一段文字或上传文件，AI 自动帮你生成任务计划
+          </p>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="输入任务内容，例如：下周五前提交项目立项书..."
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleQuickInput() }}
+                className="h-11 bg-white border-transparent text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-400 focus-visible:ring-offset-0 shadow-lg"
+              />
+            </div>
+            <Button onClick={handleQuickInput} variant="gradient" size="lg" className="h-11 px-5 font-semibold">
+              <Send className="w-4 h-4 mr-1.5" />
               提交
             </Button>
           </div>
-          <div style={{ marginTop: 12 }}>
-            <Button
-              icon={<UploadOutlined />}
-              onClick={() => navigate('/input')}
-              style={{
-                background: 'rgba(255,255,255,0.15)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: '#fff',
-                borderRadius: 'var(--radius-sm)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-            >
-              上传文件
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/input')}
+            className="mt-3 text-blue-200 hover:text-white hover:bg-white/10"
+          >
+            <Upload className="w-3.5 h-3.5 mr-1.5" />
+            上传文件
+          </Button>
         </div>
       </div>
 
-      {/* ─── Stats Overview ─── */}
-      <Spin spinning={loading}>
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={12} sm={6}>
-            <Card size="small" bodyStyle={{ padding: '16px 20px' }}>
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#666' }}>今日待办</span>}
-                value={todayTasks.length}
-                prefix={<CalendarOutlined style={{ color: 'var(--primary)' }} />}
-                valueStyle={{ fontSize: 28, fontWeight: 700, color: 'var(--primary)' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card size="small" bodyStyle={{ padding: '16px 20px' }}>
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#666' }}>即将截止</span>}
-                value={upcomingTasks.length}
-                prefix={<FireOutlined style={{ color: 'var(--warning)' }} />}
-                valueStyle={{ fontSize: 28, fontWeight: 700, color: 'var(--warning)' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card size="small" bodyStyle={{ padding: '16px 20px' }}>
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#666' }}>已过期</span>}
-                value={overdueTasks.length}
-                prefix={<ExclamationCircleOutlined style={{ color: 'var(--danger)' }} />}
-                valueStyle={{ fontSize: 28, fontWeight: 700, color: overdueTasks.length > 0 ? 'var(--danger)' : undefined }}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card size="small" bodyStyle={{ padding: '16px 20px' }}>
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#666' }}>总计</span>}
-                value={totalTasks}
-                prefix={<CheckCircleOutlined style={{ color: 'var(--success)' }} />}
-                valueStyle={{ fontSize: 28, fontWeight: 700, color: 'var(--success)' }}
-              />
-            </Card>
-          </Col>
-        </Row>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: '今日待办', value: todayTasks.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: '即将截止', value: upcomingTasks.length, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
+          { label: '已过期', value: overdueTasks.length, icon: AlertTriangle, color: overdueTasks.length > 0 ? 'text-red-500' : 'text-slate-400', bg: 'bg-red-50' },
+          { label: '总计', value: totalTasks, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        ].map((stat, i) => (
+          <Card key={i} className="border-slate-100">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">{stat.label}</p>
+                {loading ? (
+                  <Skeleton className="h-7 w-8 mt-0.5" />
+                ) : (
+                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-        {/* ─── Task Sections ─── */}
-        <Row gutter={[16, 16]}>
-          {/* Overdue */}
-          <Col xs={24} md={8}>
-            <Card
-              title={
-                <Space>
-                  <ExclamationCircleOutlined style={{ color: 'var(--danger)' }} />
-                  <span>已过期</span>
-                  {overdueTasks.length > 0 && (
-                    <Tag color="red" style={{ fontSize: 11 }}>{overdueTasks.length}</Tag>
-                  )}
-                </Space>
-              }
-              size="small"
-              bodyStyle={{ padding: '12px 0' }}
-              extra={
-                overdueTasks.length > 0 && (
-                  <Button type="link" size="small" onClick={() => navigate('/tasks?filter=overdue')}>
-                    全部 <ArrowRightOutlined />
-                  </Button>
-                )
-              }
-            >
-              {loading ? (
-                <div style={{ padding: '0 16px' }}>
-                  <Skeleton active paragraph={{ rows: 2 }} />
-                </div>
-              ) : overdueTasks.length > 0 ? (
-                <div style={{ padding: '0 12px' }}>
-                  {overdueTasks.map(task => (
-                    <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks/${task.id}`)} />
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  description="没有过期的任务"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  style={{ margin: '12px 0' }}
-                />
+      {/* Task Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Today */}
+        <Card className="border-slate-100">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                今日待办
+                {todayTasks.length > 0 && <Badge variant="default" className="text-[10px]">{todayTasks.length}</Badge>}
+              </CardTitle>
+              {todayTasks.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=today')} className="text-xs text-slate-400 h-auto p-0 hover:text-blue-600">
+                  全部 <ChevronRight className="w-3 h-3 ml-0.5" />
+                </Button>
               )}
-            </Card>
-          </Col>
-
-          {/* Today's Tasks */}
-          <Col xs={24} md={8}>
-            <Card
-              title={
-                <Space>
-                  <CalendarOutlined style={{ color: 'var(--primary)' }} />
-                  <span>今日待办</span>
-                  {todayTasks.length > 0 && (
-                    <Tag color="blue" style={{ fontSize: 11 }}>{todayTasks.length}</Tag>
-                  )}
-                </Space>
-              }
-              size="small"
-              bodyStyle={{ padding: '12px 0' }}
-              extra={
-                todayTasks.length > 0 && (
-                  <Button type="link" size="small" onClick={() => navigate('/tasks?filter=today')}>
-                    全部 <ArrowRightOutlined />
-                  </Button>
-                )
-              }
-            >
-              {loading ? (
-                <div style={{ padding: '0 16px' }}>
-                  <Skeleton active paragraph={{ rows: 2 }} />
-                </div>
-              ) : todayTasks.length > 0 ? (
-                <div style={{ padding: '0 12px' }}>
-                  {todayTasks.map(task => (
-                    <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks/${task.id}`)} />
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  description="今日暂无待办任务"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  style={{ margin: '12px 0' }}
-                >
-                  <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => navigate('/input')}>
-                    添加任务
-                  </Button>
-                </Empty>
-              )}
-            </Card>
-          </Col>
-
-          {/* Upcoming */}
-          <Col xs={24} md={8}>
-            <Card
-              title={
-                <Space>
-                  <FireOutlined style={{ color: 'var(--warning)' }} />
-                  <span>即将截止</span>
-                  {upcomingTasks.length > 0 && (
-                    <Tag color="orange" style={{ fontSize: 11 }}>{upcomingTasks.length}</Tag>
-                  )}
-                </Space>
-              }
-              size="small"
-              bodyStyle={{ padding: '12px 0' }}
-              extra={
-                upcomingTasks.length > 0 && (
-                  <Button type="link" size="small" onClick={() => navigate('/tasks?filter=due')}>
-                    全部 <ArrowRightOutlined />
-                  </Button>
-                )
-              }
-            >
-              {loading ? (
-                <div style={{ padding: '0 16px' }}>
-                  <Skeleton active paragraph={{ rows: 2 }} />
-                </div>
-              ) : upcomingTasks.length > 0 ? (
-                <div style={{ padding: '0 12px' }}>
-                  {upcomingTasks.map(task => (
-                    <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks/${task.id}`)} />
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  description="暂无即将截止任务"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  style={{ margin: '12px 0' }}
-                />
-              )}
-            </Card>
-          </Col>
-        </Row>
-
-        {/* ─── AI Tip ─── */}
-        <Card
-          size="small"
-          style={{ marginTop: 16, background: 'linear-gradient(135deg, #f0f5ff, #e6f4ff)' }}
-          bodyStyle={{ padding: '14px 20px' }}
-        >
-          <Space>
-            <RobotOutlined style={{ fontSize: 20, color: 'var(--primary)' }} />
-            <div>
-              <Text strong style={{ fontSize: 13 }}>💡 使用提示</Text>
-              <br />
-              <Text style={{ fontSize: 12, color: '#666' }}>
-                你可以输入一段课程公告、作业要求、图片截图等，AI 会自动识别任务、设置截止时间、生成检查清单
-              </Text>
             </div>
-          </Space>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {loading ? (
+              <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+            ) : todayTasks.length > 0 ? (
+              <div className="space-y-2">
+                {todayTasks.map(task => <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks/${task.id}`)} />)}
+              </div>
+            ) : (
+              <EmptyState description="今日暂无待办任务" actionText="添加任务" actionPath="/input" />
+            )}
+          </CardContent>
         </Card>
-      </Spin>
+
+        {/* Upcoming */}
+        <Card className="border-slate-100">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-500" />
+                即将截止
+                {upcomingTasks.length > 0 && <Badge variant="warning" className="text-[10px]">{upcomingTasks.length}</Badge>}
+              </CardTitle>
+              {upcomingTasks.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=due')} className="text-xs text-slate-400 h-auto p-0 hover:text-blue-600">
+                  全部 <ChevronRight className="w-3 h-3 ml-0.5" />
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {loading ? (
+              <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+            ) : upcomingTasks.length > 0 ? (
+              <div className="space-y-2">
+                {upcomingTasks.map(task => <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks/${task.id}`)} />)}
+              </div>
+            ) : (
+              <EmptyState description="暂无即将截止任务" />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Overdue */}
+        <Card className="border-slate-100">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                已过期
+                {overdueTasks.length > 0 && <Badge variant="destructive" className="text-[10px]">{overdueTasks.length}</Badge>}
+              </CardTitle>
+              {overdueTasks.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=overdue')} className="text-xs text-slate-400 h-auto p-0 hover:text-blue-600">
+                  全部 <ChevronRight className="w-3 h-3 ml-0.5" />
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {loading ? (
+              <div className="space-y-3"><Skeleton className="h-16 w-full" /></div>
+            ) : overdueTasks.length > 0 ? (
+              <div className="space-y-2">
+                {overdueTasks.map(task => <TaskCard key={task.id} task={task} onClick={() => navigate(`/tasks/${task.id}`)} />)}
+              </div>
+            ) : (
+              <EmptyState description="没有过期的任务" />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Tip */}
+      <Card className="border-slate-200 bg-gradient-to-r from-slate-50 to-orange-50/30">
+        <CardContent className="p-4 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">使用提示</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              你可以输入一段课程公告、作业要求、图片截图等，AI 会自动识别任务、设置截止时间、生成检查清单
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

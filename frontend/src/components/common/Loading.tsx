@@ -1,7 +1,4 @@
-import React from 'react'
-import { Spin, Typography } from 'antd'
-
-const { Text } = Typography
+import { Spinner } from '../ui/spinner'
 
 interface Props {
   tip?: string
@@ -11,21 +8,11 @@ interface Props {
 export default function Loading({ tip = '加载中...', fullPage = false }: Props) {
   return (
     <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: fullPage ? 0 : '48px 0',
-        minHeight: fullPage ? '100vh' : 200,
-      }}
+      className="flex flex-col items-center justify-center"
+      style={{ padding: fullPage ? 0 : '48px 0', minHeight: fullPage ? '100vh' : 200 }}
     >
-      <Spin size="large" />
-      {tip && (
-        <Text style={{ color: '#999', marginTop: 12, fontSize: 14 }}>
-          {tip}
-        </Text>
-      )}
+      <Spinner size={fullPage ? 40 : 32} />
+      {tip && <p className="mt-3 text-sm text-slate-400">{tip}</p>}
     </div>
   )
 }
