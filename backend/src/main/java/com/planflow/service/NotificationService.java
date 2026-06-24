@@ -18,6 +18,7 @@ public class NotificationService {
 
     private final NotificationMapper notificationMapper;
     private final SecurityUtils securityUtils;
+    private final com.planflow.notification.NotificationChannelManager channelManager;
 
     public Page<Notification> getUserNotifications(int page, int size) {
         Long userId = securityUtils.getCurrentUserId();
@@ -74,6 +75,10 @@ public class NotificationService {
         notification.setReadStatus("UNREAD");
         notification.setCreatedAt(LocalDateTime.now());
         notificationMapper.insert(notification);
+
+        // 通过通知渠道实时推送
+        channelManager.dispatch(notification);
+
         log.info("Created parse completed notification for userId={}, sourceInputId={}", userId, sourceInputId);
     }
 
@@ -86,6 +91,10 @@ public class NotificationService {
         notification.setReadStatus("UNREAD");
         notification.setCreatedAt(LocalDateTime.now());
         notificationMapper.insert(notification);
+
+        // 通过通知渠道实时推送
+        channelManager.dispatch(notification);
+
         log.info("Created parse failed notification for userId={}, sourceInputId={}", userId, sourceInputId);
     }
 }

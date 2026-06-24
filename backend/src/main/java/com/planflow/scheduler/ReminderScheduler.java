@@ -1,9 +1,10 @@
 package com.planflow.scheduler;
-import com.planflow.service.ReminderService;
 
 import com.planflow.entity.Notification;
 import com.planflow.entity.ReminderRule;
+import com.planflow.notification.NotificationChannelManager;
 import com.planflow.repository.NotificationMapper;
+import com.planflow.service.ReminderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ public class ReminderScheduler {
 
     private final ReminderService reminderService;
     private final NotificationMapper notificationMapper;
+    private final NotificationChannelManager channelManager;
 
     @Scheduled(fixedRate = 60000)
     public void processDueReminders() {
@@ -29,6 +31,7 @@ public class ReminderScheduler {
 
         for (ReminderRule rule : dueReminders) {
             try {
+                // 1. 持久化通知
                 Notification notification = new Notification();
                 notification.setUserId(rule.getUserId());
                 notification.setTaskId(rule.getTaskId());
@@ -40,12 +43,15 @@ public class ReminderScheduler {
                 notification.setCreatedAt(LocalDateTime.now());
                 notificationMapper.insert(notification);
 
-                // Mark reminder as sent
+                // 2. 通过通知渠道分发（WebSocket 实时推送等）
+                channelManager.dispatch(notification);
+
+                // 3. 标记提醒已发送
                 rule.setStatus("SENT");
                 rule.setUpdatedAt(LocalDateTime.now());
                 reminderService.updateReminder(rule.getId(), rule);
 
-                log.info("Sent notification for reminder: id={}", rule.getId());
+                log.info("Processed reminder: id={}, channels dispatched", rule.getId());
             } catch (Exception e) {
                 log.error("Failed to process reminder: id={}", rule.getId(), e);
             }

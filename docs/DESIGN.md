@@ -255,29 +255,92 @@ AiAnalysisResultDTO
 
 #### 4.2.3 提醒与通知模块
 
-采用**独立扫描** + **渠道分发**模式：
+采用**定时扫描** + **通知渠道插件架构**模式。
+
+**架构总览**：
 
 ```
-ReminderService (业务 CRUD)      ReminderScheduler (@Scheduled 60s)
-    │                                   │
-    │                                   ├── 查询到期 PENDING 提醒
-    │                                   ├── 状态更新为 SENT
-    │                                   └── 写入 notification 表
-    │
-    └── Android 同步 API
-        ├── GET /reminders/pending-local  ── 拉取待注册本地提醒
-        └── POST /reminders/local-sync     ── 上报本地通知注册结果
+┌──────────────────────────────────────────────────┐
+│               ReminderScheduler                   │
+│         @Scheduled 固定频率扫描到期提醒            │
+│                                                    │
+│  1. SELECT * FROM reminder_rule                    │
+│     WHERE remind_at <= now AND status = 'PENDING'  │
+│  2. 写入 notification 表（持久化）                  │
+│  3. 调用 NotificationChannelManager 分发            │
+└──────────────────────┬───────────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────────────────┐
+│           NotificationChannelManager              │
+│        管理所有注册的 NotificationChannel          │
+│        遍历 channel.isEnabled() → channel.send()  │
+└──┬──────────┬──────────┬─────────────┬───────────┘
+   │          │          │             │
+   ▼          ▼          ▼             ▼
+┌────────┐┌────────┐┌────────┐  ┌──────────────┐
+│WebSocket││ InApp  ││ Email  │  │  其他渠道...  │
+│ Channel ││(站内)  ││(预留)  │  │  (插件化扩展) │
+├────────┤├────────┤├────────┤  ├──────────────┤
+│实时推送 ││写入DB  ││SMTP   │  │              │
+│到浏览器 ││(已实现)││发送   │  │              │
+└────────┘└────────┘└────────┘  └──────────────┘
 ```
+
+**通知渠道接口**：
+
+```java
+public interface NotificationChannel {
+    /** 渠道唯一标识，如 "websocket"、"email"、"sms" */
+    String channelType();
+    /** 当前渠道是否对该用户启用 */
+    boolean isEnabled(Long userId);
+    /** 发送通知 */
+    void send(Notification notification);
+    /** 优先级（数值越小越优先） */
+    default int getOrder() { return 0; }
+}
+```
+
+**注册机制**：实现 `NotificationChannel` 接口并注册为 Spring Bean，`NotificationChannelManager` 自动收集所有渠道，按优先级排序后依次调用。
+
+**现有渠道**：
+
+| 渠道 | 类型 | 状态 | 说明 |
+|------|------|------|------|
+| 数据库持久化 | `InAppChannel` | ✅ 已实现 | 写入 notification 表，供前端 REST API 查询 |
+| WebSocket 推送 | `WebSocketChannel` | ✅ 已实现 | 连接建立后实时推送通知到浏览器，无需轮询 |
+| Android 本地通知 | — | ✅ 前端实现 | Capacitor LocalNotifications 拉取 `/reminders/pending-local` |
 
 **通知类型**：
 
 | 类型 | 触发时机 | 说明 |
 |------|----------|------|
+| `DEADLINE_SOON` | 提醒触发 | 任务即将到截止时间 |
 | `PARSE_COMPLETED` | 解析任务完成 | 来源输入解析成功 |
 | `PARSE_FAILED` | 解析任务失败 | 来源输入解析失败 |
-| `DEADLINE_SOON` | 提醒触发 | 任务即将到截止时间 |
-| `TASK_OVERDUE` | 提醒触发时已过期 | 任务已超期 |
 | `SYSTEM` | 手动/系统 | 系统通知 |
+
+**WebSocket 连接流程**：
+
+```
+客户端                         服务端
+  │                              │
+  │  WS connect /ws/notifications│
+  │  ?token=JWT                   │
+  │─────────────────────────────>│
+  │                              │
+  │  验证 JWT，绑定 userId        │
+  │  ←────────── 连接建立 ──────│
+  │                              │
+  │  有通知时：                   │
+  │  ←──── JSON 通知消息 ──────│
+  │                              │
+  │  前端收到后更新角标 + 弹窗    │
+  │                              │
+```
+
+**扩展新渠道**：只需实现 `NotificationChannel` 接口，无需修改核心代码。预留扩展点包括邮件（SMTP）、短信（阿里云/腾讯云 SDK）、浏览器 Notification API 等。
 
 ### 4.3 前端模块
 

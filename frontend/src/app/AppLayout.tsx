@@ -27,19 +27,54 @@ export default function AppLayout() {
   const { user, logout } = useAuthStore()
   const [unreadCount, setUnreadCount] = React.useState(0)
 
+  // 初始加载未读数
   React.useEffect(() => {
     const loadUnread = async () => {
       try {
         const { mockApi, isMockMode } = await import('../services/mockData')
+        const http = (await import('../services/api')).default
         if (isMockMode()) {
           const res = await mockApi.getUnreadCount()
           setUnreadCount(res.data)
+        } else {
+          const res: any = await http.get('/notifications/unread-count')
+          setUnreadCount(res?.data?.count || 0)
         }
       } catch { /* silent */ }
     }
     loadUnread()
-    const timer = setInterval(loadUnread, 15000)
-    return () => clearInterval(timer)
+  }, [])
+
+  // WebSocket 实时接收通知
+  React.useEffect(() => {
+    const token = localStorage.getItem('auth-token')
+    if (!token) return
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const host = window.location.host
+    const ws = new WebSocket(`${protocol}//${host}/ws/notifications?token=${token}`)
+
+    ws.onmessage = (event) => {
+      try {
+        const notif = JSON.parse(event.data)
+        // 更新未读数
+        setUnreadCount(prev => prev + 1)
+
+        // 弹出右上角提示（非当前页的通知）
+        if (window.location.pathname !== '/notifications') {
+          // TODO: toast 通知
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
+    ws.onclose = () => {
+      // 断线后尝试重连
+      setTimeout(() => {
+        // React will re-run effect on clean up
+      }, 5000)
+    }
+
+    return () => ws.close()
   }, [])
 
   const isActive = (path: string) =>
