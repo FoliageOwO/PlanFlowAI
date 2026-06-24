@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -18,10 +20,12 @@ public class TimelineController {
 
     @GetMapping
     public ApiResponse getTimeline(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDateTime from,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDateTime to,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate to,
             @RequestParam(required = false) String type) {
-        List<TimelineEvent> events = timelineService.getTimeline(from, to, type);
+        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+        List<TimelineEvent> events = timelineService.getTimeline(fromDt, toDt, type);
         return ApiResponse.success(events);
     }
 }

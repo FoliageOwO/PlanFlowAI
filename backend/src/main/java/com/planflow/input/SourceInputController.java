@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -26,7 +27,10 @@ public class SourceInputController {
         }
         try {
             CreateInputResult result = sourceInputService.createTextInput(content);
-            return ApiResponse.success(Map.of("inputId", result.getInputId(), "jobId", result.getJobId()));
+            Map<String, Object> textResult = new HashMap<>();
+            textResult.put("inputId", result.getInputId());
+            textResult.put("jobId", result.getJobId());
+            return ApiResponse.success(textResult);
         } catch (Exception e) {
             log.error("Failed to create text input", e);
             return ApiResponse.error(ErrorCode.SERVER_ERROR, e.getMessage());
@@ -44,11 +48,11 @@ public class SourceInputController {
         }
         try {
             CreateInputResult result = sourceInputService.createFileUpload(file, sourceType.toUpperCase());
-            return ApiResponse.success(Map.of(
-                    "inputId", result.getInputId(),
-                    "jobId", result.getJobId(),
-                    "fileName", result.getFileName()
-            ));
+            Map<String, Object> uploadResult = new HashMap<>();
+            uploadResult.put("inputId", result.getInputId());
+            uploadResult.put("jobId", result.getJobId());
+            uploadResult.put("fileName", result.getFileName());
+            return ApiResponse.success(uploadResult);
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(ErrorCode.BAD_REQUEST, e.getMessage());
         } catch (Exception e) {
@@ -61,7 +65,10 @@ public class SourceInputController {
     public ApiResponse listInputs(@RequestParam(defaultValue = "1") int page,
                                    @RequestParam(defaultValue = "10") int size) {
         Page<SourceInput> result = sourceInputService.listInputs(page, size);
-        return ApiResponse.success(result);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", result.getRecords());
+        data.put("total", result.getTotal());
+        return ApiResponse.success(data);
     }
 
     @GetMapping("/api/inputs/{id}")

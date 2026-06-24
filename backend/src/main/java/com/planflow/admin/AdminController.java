@@ -14,6 +14,7 @@ import com.planflow.user.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -42,12 +43,12 @@ public class AdminController {
         long sourceInputCount = sourceInputMapper.selectCount(null);
         long doneTaskCount = taskMapper.selectCount(
                 new LambdaQueryWrapper<Task>().eq(Task::getStatus, "DONE"));
-        return ApiResponse.success(Map.of(
-                "userCount", userCount,
-                "taskCount", taskCount,
-                "sourceInputCount", sourceInputCount,
-                "doneTaskCount", doneTaskCount
-        ));
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("userCount", userCount);
+        stats.put("taskCount", taskCount);
+        stats.put("sourceInputCount", sourceInputCount);
+        stats.put("doneTaskCount", doneTaskCount);
+        return ApiResponse.success(stats);
     }
 
     @GetMapping("/users")
@@ -64,7 +65,10 @@ public class AdminController {
         Page<User> result = userMapper.selectPage(pageParam, wrapper);
         // Remove password hash from response
         result.getRecords().forEach(u -> u.setPasswordHash(null));
-        return ApiResponse.success(result);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", result.getRecords());
+        data.put("total", result.getTotal());
+        return ApiResponse.success(data);
     }
 
     @PutMapping("/users/{id}/toggle")
@@ -72,8 +76,12 @@ public class AdminController {
         checkAdmin();
         User user = userMapper.selectById(id);
         if (user == null) return ApiResponse.error(ErrorCode.NOT_FOUND, "用户不存在");
-        user.setStatus(user.getStatus() == 1 ? 0 : 1);
+        Integer currentStatus = user.getStatus();
+        user.setStatus(currentStatus != null && currentStatus == 1 ? 0 : 1);
         userMapper.updateById(user);
-        return ApiResponse.success(Map.of("id", id, "status", user.getStatus()));
+        Map<String, Object> toggleResult = new HashMap<>();
+        toggleResult.put("id", id);
+        toggleResult.put("status", user.getStatus());
+        return ApiResponse.success(toggleResult);
     }
 }

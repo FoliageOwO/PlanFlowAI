@@ -7,6 +7,7 @@ import com.planflow.entity.Notification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -21,7 +22,10 @@ public class NotificationController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         Page<Notification> result = notificationService.getUserNotifications(page, size);
-        return ApiResponse.success(result);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", result.getRecords());
+        data.put("total", result.getTotal());
+        return ApiResponse.success(data);
     }
 
     @GetMapping("/unread-count")

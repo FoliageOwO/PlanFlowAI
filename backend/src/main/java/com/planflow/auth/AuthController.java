@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -27,7 +28,7 @@ public class AuthController {
     public ApiResponse register(@Valid @RequestBody RegisterRequest request) {
         try {
             String token = authService.register(request);
-            return ApiResponse.success(Map.of("token", token));
+            return ApiResponse.success(Map.of("token", token != null ? token : ""));
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(ErrorCode.BAD_REQUEST, e.getMessage());
         }
@@ -37,7 +38,18 @@ public class AuthController {
     public ApiResponse login(@Valid @RequestBody LoginRequest request) {
         try {
             String token = authService.login(request);
-            return ApiResponse.success(Map.of("token", token));
+            User user = authService.getCurrentUser(request.getUsername());
+            Map<String, Object> loginData = new HashMap<>();
+            loginData.put("token", token != null ? token : "");
+            if (user != null) {
+                Map<String, Object> safeUser = new HashMap<>();
+                safeUser.put("id", user.getId() != null ? String.valueOf(user.getId()) : "");
+                safeUser.put("username", user.getUsername());
+                safeUser.put("nickname", user.getNickname());
+                safeUser.put("role", user.getRole() != null ? user.getRole() : "USER");
+                loginData.put("user", safeUser);
+            }
+            return ApiResponse.success(loginData);
         } catch (RuntimeException e) {
             return ApiResponse.error(ErrorCode.UNAUTHORIZED, e.getMessage());
         }
@@ -55,16 +67,15 @@ public class AuthController {
             return ApiResponse.error(ErrorCode.NOT_FOUND, "用户不存在");
         }
         // return safe user info (without password hash)
-        Map<String, Object> userInfo = Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "nickname", user.getNickname(),
-                "email", user.getEmail(),
-                "avatarUrl", user.getAvatarUrl(),
-                "status", user.getStatus(),
-                "role", user.getRole() != null ? user.getRole() : "USER",
-                "createdAt", user.getCreatedAt()
-        );
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", user.getId());
+        userInfo.put("username", user.getUsername());
+        userInfo.put("nickname", user.getNickname());
+        userInfo.put("email", user.getEmail());
+        userInfo.put("avatarUrl", user.getAvatarUrl());
+        userInfo.put("status", user.getStatus());
+        userInfo.put("role", user.getRole() != null ? user.getRole() : "USER");
+        userInfo.put("createdAt", user.getCreatedAt());
         return ApiResponse.success(userInfo);
     }
 
@@ -84,6 +95,9 @@ public class AuthController {
         if (body.containsKey("avatarUrl")) user.setAvatarUrl(body.get("avatarUrl"));
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.updateById(user);
-        return ApiResponse.success(Map.of("nickname", user.getNickname(), "email", user.getEmail()));
+        Map<String, Object> profileData = new HashMap<>();
+        profileData.put("nickname", user.getNickname());
+        profileData.put("email", user.getEmail());
+        return ApiResponse.success(profileData);
     }
 }

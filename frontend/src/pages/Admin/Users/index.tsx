@@ -25,10 +25,10 @@ export default function AdminUsers() {
       if (s) params.search = s
       if (isMockMode()) {
         const res = await mockApi.getAdminUsers(params)
-        if (res.code === 0) setUsers(res.data.list)
+        if (res.code === 0) setUsers(res.data?.list || [])
       } else {
         const res: any = await http.get('/admin/users', { params })
-        setUsers(res.data.list)
+        setUsers(res?.data?.list || [])
       }
     } catch { } finally { setLoading(false) }
   }, [])

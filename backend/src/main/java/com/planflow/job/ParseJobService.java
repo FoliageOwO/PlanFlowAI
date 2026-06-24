@@ -89,4 +89,26 @@ public class ParseJobService {
         job.setUpdatedAt(LocalDateTime.now());
         parseJobMapper.updateById(job);
     }
+
+    public void retryJob(Long jobId) {
+        ParseJob job = parseJobMapper.selectById(jobId);
+        if (job == null) {
+            throw new RuntimeException("解析任务不存在");
+        }
+        if (!"FAILED".equals(job.getStatus())) {
+            throw new RuntimeException("只能重试已失败的任务");
+        }
+        int maxRetry = 3;
+        if (job.getRetryCount() >= maxRetry) {
+            throw new RuntimeException("已达到最大重试次数(" + maxRetry + ")，无法继续重试");
+        }
+        job.setStatus("PENDING");
+        job.setStage(null);
+        job.setProgress(0);
+        job.setErrorMessage(null);
+        job.setRetryCount(job.getRetryCount() + 1);
+        job.setUpdatedAt(LocalDateTime.now());
+        parseJobMapper.updateById(job);
+        log.info("Retrying job: id={}, retryCount={}", jobId, job.getRetryCount());
+    }
 }

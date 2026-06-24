@@ -29,7 +29,8 @@ const priorityBadgeV: Record<string, 'destructive' | 'warning' | 'default' | 'se
 }
 
 function TaskCard({ task, onClick }: { task: TaskItem; onClick: () => void }) {
-  const isOverdue = dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE'
+  const hasDeadline = task.deadline && dayjs(task.deadline).isValid()
+  const isOverdue = hasDeadline && dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE'
   return (
     <div
       onClick={onClick}
@@ -41,7 +42,8 @@ function TaskCard({ task, onClick }: { task: TaskItem; onClick: () => void }) {
           <div className="flex items-center gap-2 mt-1.5">
             <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
               <Clock className="w-3 h-3" />
-              {isOverdue
+              {!hasDeadline ? '无截止时间' :
+               isOverdue
                 ? `已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天`
                 : dayjs(task.deadline).fromNow()}
             </span>
@@ -68,14 +70,14 @@ export default function Dashboard() {
     try {
       if (isMockMode()) {
         const res = await mockApi.getDashboardTasks()
-        setTodayTasks(res.data.today)
-        setUpcomingTasks(res.data.upcoming)
-        setOverdueTasks(res.data.overdue)
+        setTodayTasks(res.data?.today || [])
+        setUpcomingTasks(res.data?.upcoming || [])
+        setOverdueTasks(res.data?.overdue || [])
       } else {
         const res: any = await http.get('/dashboard/tasks')
-        setTodayTasks(res.data.today)
-        setUpcomingTasks(res.data.upcoming)
-        setOverdueTasks(res.data.overdue)
+        setTodayTasks(res?.data?.today || [])
+        setUpcomingTasks(res?.data?.upcoming || [])
+        setOverdueTasks(res?.data?.overdue || [])
       }
     } catch { /* silent */ } finally {
       setLoading(false)

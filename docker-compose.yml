@@ -27,6 +27,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-default-dev-secret-change-in-production}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - OCR_SERVICE_URL=http://ocr-service:8000/ocr/image
+      - OCR_ENABLED=true
     volumes:
       - uploads-data:/app/uploads
     depends_on:

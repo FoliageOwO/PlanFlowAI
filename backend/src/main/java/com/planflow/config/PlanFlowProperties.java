@@ -15,6 +15,7 @@ public class PlanFlowProperties {
 
     @Data
     public static class Ocr {
+        private boolean enabled = false;
         private String serviceUrl = "http://localhost:8000/ocr/image";
     }
 

@@ -92,14 +92,26 @@ public class SourceInputService {
         Path targetDir = Paths.get(uploadDir, userId.toString(), input.getId().toString());
         try {
             Files.createDirectories(targetDir);
-            Path filePath = targetDir.resolve(originalFilename);
+            // Sanitize filename: remove path traversal characters
+            String safeFilename = originalFilename != null
+                    ? originalFilename.replaceAll("[/\\\\:<>\"|?*]", "_")
+                    : "upload_" + input.getId();
+            Path filePath = targetDir.resolve(safeFilename).normalize();
+
+            // Ensure resolved path is still within targetDir (security check)
+            if (!filePath.startsWith(targetDir.normalize())) {
+                throw new IOException("Filename path traversal detected: " + originalFilename);
+            }
+
             file.transferTo(filePath.toFile());
             input.setFilePath(filePath.toString());
             sourceInputMapper.updateById(input);
-            log.info("File saved: {}", filePath);
+            log.info("File saved: userId={}, inputId={}, path={}, size={}",
+                    userId, input.getId(), filePath, file.getSize());
         } catch (IOException e) {
-            log.error("Failed to save uploaded file", e);
-            throw new RuntimeException("File save failed: " + e.getMessage(), e);
+            log.error("Failed to save uploaded file: userId={}, inputId={}, dir={}, filename={}",
+                    userId, input.getId(), targetDir, originalFilename, e);
+            throw new RuntimeException("文件保存失败，请检查上传目录权限: " + e.getMessage(), e);
         }
 
         // Create parse job

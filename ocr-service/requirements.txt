@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 paddleocr
-paddlepaddle
+paddlepaddle==3.2.2
 opencv-python
 numpy
 python-multipart

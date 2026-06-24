@@ -37,8 +37,8 @@ export default function NotificationsPage() {
     setLoading(true)
     try {
       const params = { page: p || page, pageSize, unreadOnly: tab === 'unread' }
-      if (isMockMode()) { const res = await mockApi.getNotifications(params); setNotifications(res.data.list); setTotal(res.data.total) }
-      else { const res: any = await http.get('/notifications', { params }); setNotifications(res.data.list); setTotal(res.data.total) }
+      if (isMockMode()) { const res = await mockApi.getNotifications(params); setNotifications(res.data?.list || []); setTotal(res.data?.total || 0) }
+      else { const res: any = await http.get('/notifications', { params }); setNotifications(res?.data?.list || []); setTotal(res?.data?.total || 0) }
     } catch { } finally { setLoading(false) }
   }, [tab, page])
 

@@ -61,9 +61,41 @@ export default function TaskDetail() {
       if (isMockMode()) {
         const res = await mockApi.getTaskDetail(id!)
         if (res.code === 0 && res.data) { setTask(res.data); setChecklist(res.data.checklist || []) }
+        else { setTask(null) }
       } else {
         const res: any = await http.get(`/tasks/${id}`)
-        setTask(res.data); setChecklist(res.data.checklist || [])
+        // The backend wraps response: { code, data, message }
+        // Also handles the case where the backend returns raw Task entity
+        // which differs from frontend TaskItem interface
+        if (res?.code === 200 && res?.data) {
+          const raw = res.data
+          // Normalize backend entity to frontend TaskItem format
+          // Support both old format (constraintsJson) and new format (constraints array)
+          let constraints: string[] = []
+          if (Array.isArray(raw.constraints)) constraints = raw.constraints
+          else if (raw.constraintsJson) { try { constraints = JSON.parse(raw.constraintsJson) } catch {} }
+
+          setTask({
+            id: String(raw.id),
+            title: raw.title || '',
+            description: raw.description || '',
+            deadline: raw.deadline || '',
+            priority: raw.priority || 'MEDIUM',
+            status: raw.status || 'TODO',
+            estimatedHours: raw.estimatedMinutes ? Math.round(raw.estimatedMinutes / 60) : 0,
+            sourceType: raw.taskType === 'AI_EXTRACTED' ? 'TEXT' : (raw.sourceType || 'TEXT'),
+            sourceEvidence: raw.sourceEvidence || '',
+            constraints,
+            reminders: raw.reminders || [],
+            checklist: raw.checklist || [],
+            aiSuggestion: raw.aiSuggestion || '',
+            createdAt: raw.createdAt || '',
+            updatedAt: raw.updatedAt || '',
+          } as TaskItem)
+          setChecklist(raw.checklist || [])
+        } else {
+          setTask(null)
+        }
       }
     } catch { /* silent */ } finally { setLoading(false) }
   }, [id])
@@ -156,7 +188,7 @@ export default function TaskDetail() {
     </div>
   )
 
-  const isOverdue = dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE'
+  const isOverdue = task.deadline ? dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE' : false
   const checkedCount = checklist.filter(c => c.done).length
   const priCfg = priorityConfig[task.priority]
   const stCfg = statusConfig[task.status]
@@ -180,8 +212,8 @@ export default function TaskDetail() {
                 {isOverdue && <Badge variant="destructive" className="text-xs"><AlertTriangle className="w-3 h-3 mr-0.5" />已过期</Badge>}
                 <span className={`text-sm flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-slate-500'}`}>
                   <Calendar className="w-3.5 h-3.5" />
-                  {dayjs(task.deadline).format('YYYY-MM-DD HH:mm')}
-                  {isOverdue && ` (已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天)`}
+                  {task.deadline ? dayjs(task.deadline).format('YYYY-MM-DD HH:mm') : '无截止时间'}
+                  {isOverdue && task.deadline && ` (已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天)`}
                 </span>
               </div>
             </div>
@@ -266,7 +298,7 @@ export default function TaskDetail() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-slate-500">优先级</span><Badge variant={priCfg.variant}>{priCfg.label}</Badge></div>
               <div className="flex justify-between"><span className="text-slate-500">状态</span><Badge variant={stCfg.variant}>{stCfg.label}</Badge></div>
-              <div className="flex justify-between"><span className="text-slate-500">截止时间</span><span className={isOverdue ? 'text-red-500' : ''}>{dayjs(task.deadline).format('MM-DD HH:mm')}{isOverdue ? ' (已过期)' : ''}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">截止时间</span><span className={isOverdue ? 'text-red-500' : ''}>{task.deadline ? dayjs(task.deadline).format('MM-DD HH:mm') : '无'}{isOverdue ? ' (已过期)' : ''}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">预估耗时</span><span>{task.estimatedHours} 小时</span></div>
               <div className="flex justify-between"><span className="text-slate-500">来源类型</span><span className="flex items-center gap-1">{sourceIcons[task.sourceType]}{task.sourceType}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">创建时间</span><span>{dayjs(task.createdAt).format('MM-DD HH:mm')}</span></div>

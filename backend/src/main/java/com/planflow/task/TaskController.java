@@ -11,8 +11,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -21,6 +21,8 @@ public class TaskController {
 
     private final TaskService taskService;
     private final TaskChecklistItemMapper checklistItemMapper;
+    private final com.planflow.mapper.ReminderRuleMapper reminderRuleMapper;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @GetMapping
     public ApiResponse listTasks(
@@ -33,7 +35,11 @@ public class TaskController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long sourceInputId) {
         Page<Task> result = taskService.listTasks(page, size, status, priority, from, to, keyword, sourceInputId);
-        return ApiResponse.success(result);
+        // Transform MyBatis Plus Page to frontend-friendly format { list, total }
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", result.getRecords());
+        data.put("total", result.getTotal());
+        return ApiResponse.success(data);
     }
 
     @GetMapping("/today")
@@ -55,7 +61,63 @@ public class TaskController {
     public ApiResponse getTask(@PathVariable Long id) {
         try {
             Task task = taskService.getTaskById(id);
-            return ApiResponse.success(task);
+
+            // Build enriched response with checklist + reminders
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", task.getId());
+            result.put("userId", task.getUserId());
+            result.put("sourceInputId", task.getSourceInputId());
+            result.put("title", task.getTitle());
+            result.put("description", task.getDescription());
+            result.put("taskType", task.getTaskType());
+            result.put("priority", task.getPriority());
+            result.put("status", task.getStatus());
+            result.put("deadline", task.getDeadline());
+            result.put("estimatedMinutes", task.getEstimatedMinutes());
+            result.put("createdAt", task.getCreatedAt());
+            result.put("updatedAt", task.getUpdatedAt());
+
+            // Parse constraints JSON to list
+            if (task.getConstraintsJson() != null) {
+                try {
+                    result.put("constraints", objectMapper.readValue(task.getConstraintsJson(), List.class));
+                } catch (Exception e) {
+                    result.put("constraints", new ArrayList<>());
+                }
+            } else {
+                result.put("constraints", new ArrayList<>());
+            }
+
+            // Parse source evidence
+            result.put("sourceEvidence", task.getSourceEvidence());
+
+            // Checklist items
+            List<Map<String, Object>> checklistItems = taskService.getChecklistItems(id).stream()
+                    .map(ci -> {
+                        Map<String, Object> item = new HashMap<>();
+                        item.put("id", String.valueOf(ci.getId()));
+                        item.put("text", ci.getContent());
+                        item.put("done", ci.getChecked() == 1);
+                        return item;
+                    })
+                    .collect(Collectors.toList());
+            result.put("checklist", checklistItems);
+
+            // Reminder rules
+            List<Map<String, Object>> reminderItems = reminderRuleMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.planflow.entity.ReminderRule>()
+                            .eq(com.planflow.entity.ReminderRule::getTaskId, id)
+                            .orderByAsc(com.planflow.entity.ReminderRule::getRemindAt)
+            ).stream().map(rr -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", String.valueOf(rr.getId()));
+                item.put("time", rr.getRemindAt() != null ? rr.getRemindAt().toString() : "");
+                item.put("channel", rr.getChannel() != null ? rr.getChannel() : "IN_APP");
+                return item;
+            }).collect(Collectors.toList());
+            result.put("reminders", reminderItems);
+
+            return ApiResponse.success(result);
         } catch (Exception e) {
             return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
         }

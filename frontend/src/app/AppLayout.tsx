@@ -17,7 +17,7 @@ const navItems = [
   { key: '/', icon: Home, label: '首页' },
   { key: '/tasks', icon: ListTodo, label: '任务' },
   { key: '/input', icon: FileText, label: '输入' },
-  { key: '/timeline', icon: Clock, label: '时间轴' },
+  { key: '/timeline', icon: Clock, label: '日程' },
   { key: '/notifications', icon: Bell, label: '通知' },
 ]
 

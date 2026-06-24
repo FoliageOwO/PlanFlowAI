@@ -117,18 +117,23 @@ public class ParseJobWorker {
             case "IMAGE" -> {
                 File imageFile = new File(sourceInput.getFilePath());
                 if (!imageFile.exists()) {
-                    throw new RuntimeException("Image file not found: " + sourceInput.getFilePath());
+                    throw new RuntimeException("图片文件不存在: " + sourceInput.getFilePath());
                 }
-                yield ocrClient.recognize(imageFile);
+                try {
+                    yield ocrClient.recognize(imageFile);
+                } catch (Exception e) {
+                    log.warn("OCR failed for sourceInputId={}", sourceInput.getId(), e);
+                    throw new RuntimeException("图片文字识别失败: " + e.getMessage(), e);
+                }
             }
             case "PDF", "DOCX" -> {
                 File docFile = new File(sourceInput.getFilePath());
                 if (!docFile.exists()) {
-                    throw new RuntimeException("File not found: " + sourceInput.getFilePath());
+                    throw new RuntimeException("文件不存在: " + sourceInput.getFilePath());
                 }
                 yield textExtractService.extract(docFile, sourceType);
             }
-            default -> throw new RuntimeException("Unsupported source type: " + sourceType);
+            default -> throw new RuntimeException("不支持的文件类型: " + sourceType);
         };
     }
 }

@@ -40,6 +40,7 @@ planflow:
     secret: ${JWT_SECRET:planflow-default-secret-key-change-in-production-32chars}
     expiration: 86400000
   ocr:
+    enabled: ${OCR_ENABLED:false}
     service-url: ${OCR_SERVICE_URL:http://localhost:8000/ocr/image}
   ai:
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
