@@ -129,14 +129,14 @@ export default function AppLayout() {
   const isAdmin = user?.role === 'ADMIN'
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-zinc-50 font-sans">
       {/* Desktop Header */}
-      <header className="hidden md:flex items-center justify-between h-14 px-6 bg-white border-b border-slate-100 sticky top-0 z-50">
+      <header className="hidden md:flex items-center justify-between h-14 px-6 bg-white/95 border-b border-zinc-200 sticky top-0 z-50 backdrop-blur">
         <div className="flex items-center gap-8">
           {/* Logo */}
           <button
             onClick={() => navigate('/')}
-            className="text-lg font-bold text-blue-700 tracking-tight hover:text-blue-800 transition-colors"
+            className="text-lg font-semibold text-zinc-950 tracking-tight hover:text-zinc-700 transition-colors"
           >
             PlanFlowAI
           </button>
@@ -153,8 +153,8 @@ export default function AppLayout() {
                   className={`
                     flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150
                     ${active
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                      ? 'bg-zinc-100 text-zinc-950'
+                      : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
                     }
                   `}
                 >
@@ -171,7 +171,7 @@ export default function AppLayout() {
           {/* Notification bell */}
           <button
             onClick={() => navigate('/notifications')}
-            className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+            className="relative p-2 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-all"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -184,16 +184,16 @@ export default function AppLayout() {
           {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+              <button className="flex items-center gap-2 p-1 rounded-md hover:bg-zinc-50 transition-colors cursor-pointer">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className={isAdmin
-                    ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs'
-                    : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs'
+                    ? 'bg-zinc-950 text-white text-xs'
+                    : 'bg-pine-700 text-white text-xs'
                   }>
                     {firstLetter}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium text-slate-700 hidden sm:block">
+                <span className="text-sm font-medium text-zinc-700 hidden sm:block">
                   {user?.nickname || user?.username}
                 </span>
               </button>
@@ -202,7 +202,7 @@ export default function AppLayout() {
               <DropdownMenuLabel>
                 <div className="flex flex-col">
                   <span className="font-semibold text-sm">{user?.nickname || user?.username}</span>
-                  <span className="text-xs text-slate-400 font-normal">
+                  <span className="text-xs text-zinc-400 font-normal">
                     {isAdmin ? '管理员' : '用户'}
                   </span>
                 </div>
@@ -232,12 +232,12 @@ export default function AppLayout() {
       </header>
 
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between h-12 px-4 bg-white border-b border-slate-100 sticky top-0 z-50">
-        <span className="text-lg font-bold text-blue-700">PlanFlowAI</span>
+      <div className="md:hidden flex items-center justify-between h-12 px-4 bg-white/95 border-b border-zinc-200 sticky top-0 z-50 backdrop-blur">
+        <span className="text-lg font-semibold text-zinc-950">PlanFlowAI</span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/notifications')}
-            className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+            className="relative p-2 rounded-md text-zinc-400 hover:text-zinc-700 transition-all"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -248,7 +248,7 @@ export default function AppLayout() {
           </button>
           <button
             onClick={() => navigate('/settings')}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+            className="p-2 rounded-md text-zinc-400 hover:text-zinc-700 transition-all"
           >
             <User className="w-5 h-5" />
           </button>
@@ -261,9 +261,9 @@ export default function AppLayout() {
       </main>
 
       {toast && (
-        <div className="fixed right-4 top-16 z-[80] w-[min(360px,calc(100vw-32px))] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
+      <div className="fixed right-4 top-16 z-[80] w-[min(360px,calc(100vw-32px))] rounded-lg border border-zinc-200 bg-white p-4 shadow-lg">
           <div className="flex items-start gap-3">
-            <Bell className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Bell className="w-5 h-5 text-zinc-700 flex-shrink-0 mt-0.5" />
             <button
               className="flex-1 text-left"
               onClick={() => {
@@ -273,10 +273,10 @@ export default function AppLayout() {
                 else navigate('/notifications')
               }}
             >
-              <p className="text-sm font-semibold text-slate-900">{toast.title}</p>
-              {toast.content && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{toast.content}</p>}
+              <p className="text-sm font-semibold text-zinc-950">{toast.title}</p>
+              {toast.content && <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{toast.content}</p>}
             </button>
-            <button className="text-slate-400 hover:text-slate-600" onClick={() => setToast(null)}>
+            <button className="text-zinc-400 hover:text-zinc-600" onClick={() => setToast(null)}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -284,7 +284,7 @@ export default function AppLayout() {
       )}
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center h-14 z-50 pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 flex justify-around items-center h-14 z-50 pb-safe">
         {navItems.map(item => {
           const active = isActive(item.key)
           const Icon = item.icon
@@ -293,7 +293,7 @@ export default function AppLayout() {
               key={item.key}
               onClick={() => navigate(item.key)}
               className={`flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 min-w-[48px] min-h-[48px] transition-colors ${
-                active ? 'text-blue-600' : 'text-slate-400'
+                active ? 'text-zinc-950' : 'text-zinc-400'
               }`}
             >
               {item.key === '/notifications' ? (

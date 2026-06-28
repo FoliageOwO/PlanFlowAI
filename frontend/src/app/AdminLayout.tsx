@@ -36,7 +36,7 @@ export default function AdminLayout() {
       {/* Desktop Header */}
       <header className="hidden md:flex items-center justify-between h-14 px-6 bg-slate-900 text-white sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <LayoutDashboard className="w-5 h-5 text-blue-400" />
+          <LayoutDashboard className="w-5 h-5 text-zinc-500" />
           <span className="text-base font-semibold">PlanFlowAI 管理后台</span>
         </div>
         <div className="flex items-center gap-3">
@@ -53,7 +53,7 @@ export default function AdminLayout() {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">
                 <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-blue-600 text-white text-xs">
+                  <AvatarFallback className="bg-zinc-700 text-white text-xs">
                     {firstLetter}
                   </AvatarFallback>
                 </Avatar>
@@ -101,7 +101,7 @@ export default function AdminLayout() {
                   className={`
                     flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 w-full text-left
                     ${active
-                      ? 'bg-blue-50 text-blue-700'
+                      ? 'bg-zinc-50 text-zinc-900'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                     }
                   `}
@@ -130,7 +130,7 @@ export default function AdminLayout() {
               key={item.key}
               onClick={() => navigate(item.key)}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[48px] min-h-[48px] ${
-                active ? 'text-blue-600' : 'text-slate-400'
+                active ? 'text-zinc-700' : 'text-slate-400'
               }`}
             >
               <Icon className="w-5 h-5" />

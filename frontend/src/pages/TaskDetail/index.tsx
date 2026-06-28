@@ -357,7 +357,7 @@ export default function TaskDetail() {
         <div className="lg:col-span-2 space-y-4">
           {/* Description */}
           <Card className="border-slate-100">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" />描述</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-zinc-700" />描述</CardTitle></CardHeader>
             <CardContent><p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{task.description || '暂无描述'}</p></CardContent>
           </Card>
 
@@ -400,7 +400,7 @@ export default function TaskDetail() {
             <Card className="border-slate-100">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-blue-600" />AI 提取依据
+                  <Link2 className="w-4 h-4 text-zinc-700" />AI 提取依据
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -488,9 +488,9 @@ export default function TaskDetail() {
 
           {/* AI Suggestion */}
           {task.aiSuggestion && (
-            <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-blue-50/50">
-              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" />AI 建议</CardTitle></CardHeader>
-              <CardContent><p className="text-xs text-blue-800 leading-relaxed">{task.aiSuggestion}</p></CardContent>
+            <Card className="bg-zinc-50/70">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-zinc-700" />AI 建议</CardTitle></CardHeader>
+              <CardContent><p className="text-xs text-zinc-700 leading-relaxed">{task.aiSuggestion}</p></CardContent>
             </Card>
           )}
         </div>

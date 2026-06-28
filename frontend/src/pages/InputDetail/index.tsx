@@ -105,7 +105,7 @@ export default function InputDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <Card className="border-slate-100">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" />原始内容</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-zinc-700" />原始内容</CardTitle></CardHeader>
             <CardContent>
               <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700 whitespace-pre-wrap max-h-56 overflow-y-auto">
                 {input.originalText || input.originalName || '暂无原始文本'}
@@ -124,7 +124,7 @@ export default function InputDetailPage() {
           </Card>
 
           <Card className="border-slate-100">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bot className="w-4 h-4 text-blue-600" />AI 解析结果</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bot className="w-4 h-4 text-zinc-700" />AI 解析结果</CardTitle></CardHeader>
             <CardContent>
               {data.aiResult ? (
                 <div className="space-y-3">
@@ -142,10 +142,10 @@ export default function InputDetailPage() {
 
         <div className="space-y-4">
           <Card className="border-slate-100">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ListTodo className="w-4 h-4 text-blue-600" />生成任务</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ListTodo className="w-4 h-4 text-zinc-700" />生成任务</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {data.tasks.length > 0 ? data.tasks.map(task => (
-                <button key={task.id} onClick={() => navigate(`/tasks/${task.id}`)} className="w-full text-left rounded-lg border border-slate-100 p-3 hover:bg-blue-50/40 hover:border-blue-200">
+                <button key={task.id} onClick={() => navigate(`/tasks/${task.id}`)} className="w-full text-left rounded-lg border border-slate-100 p-3 hover:bg-zinc-50/40 hover:border-zinc-300">
                   <p className="text-sm font-medium text-slate-900">{task.title}</p>
                   {task.deadline && <p className="text-xs text-slate-500 mt-1">{dayjs(task.deadline).format('MM-DD HH:mm')}</p>}
                 </button>

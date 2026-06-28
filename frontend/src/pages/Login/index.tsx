@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/badge'
 import { Card, CardContent } from '../../components/ui/card'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-import { Sparkles, User, Lock, ShieldCheck } from 'lucide-react'
+import { ClipboardCheck, User, Lock, ShieldCheck } from 'lucide-react'
 
 const demoAccounts = [
   { label: '管理员', username: 'admin', password: '123456' },
@@ -58,27 +58,23 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-blue-50/40" />
-      <div className="absolute -bottom-10 -left-10 w-60 h-60 rounded-full bg-slate-100/50" />
-
-      <Card className="w-full max-w-sm relative z-10 border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
+      <Card className="w-full max-w-sm">
         <CardContent className="pt-8 pb-6">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-200/50">
-              <Sparkles className="w-7 h-7 text-white" />
+            <div className="w-14 h-14 mx-auto mb-4 rounded-lg bg-zinc-950 flex items-center justify-center">
+              <ClipboardCheck className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">PlanFlow AI</h1>
-            <p className="text-sm text-slate-500 mt-1">智能任务规划系统</p>
+            <h1 className="text-xl font-semibold text-zinc-950 tracking-tight">PlanFlow AI</h1>
+            <p className="text-sm text-zinc-500 mt-1">把通知和要求整理成计划</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="username">用户名</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
                   id="username"
                   placeholder="请输入用户名"
@@ -92,7 +88,7 @@ export default function Login() {
             <div className="space-y-1.5">
               <Label htmlFor="password">密码</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
                   id="password"
                   type="password"
@@ -114,17 +110,17 @@ export default function Login() {
           </form>
 
           {/* Demo accounts */}
-          <div className="mt-5 pt-4 border-t border-slate-100">
+          <div className="mt-5 pt-4 border-t border-zinc-100">
             <div className="flex items-center gap-1.5 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-              <span className="text-xs text-slate-400">演示账号（点击填充）</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-xs text-zinc-400">演示账号（点击填充）</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {demoAccounts.map(acc => (
                 <Badge
                   key={acc.username}
                   variant="outline"
-                  className="cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-colors text-xs"
+                  className="cursor-pointer hover:bg-zinc-100 hover:border-zinc-300 transition-colors text-xs"
                   onClick={() => fillDemo(acc.username, acc.password)}
                 >
                   {acc.label}: {acc.username}
@@ -133,9 +129,9 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="mt-5 text-center text-sm text-slate-500">
+          <div className="mt-5 text-center text-sm text-zinc-500">
             没有账号？
-            <Link to="/register" className="ml-1.5 text-blue-600 font-medium hover:text-blue-700 transition-colors">
+            <Link to="/register" className="ml-1.5 text-zinc-950 font-medium hover:text-zinc-700 transition-colors">
               立即注册
             </Link>
           </div>

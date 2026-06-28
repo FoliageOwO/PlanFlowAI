@@ -8,17 +8,24 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          50: '#f5f5f4',
+          100: '#e7e5e4',
+          200: '#d6d3d1',
+          300: '#a8a29e',
+          400: '#78716c',
+          500: '#57534e',
+          600: '#44403c',
+          700: '#292524',
+          800: '#1c1917',
+          900: '#171412',
+          950: '#0c0a09',
+        },
+        pine: {
+          50: '#f0f7f2',
+          100: '#dbeee0',
+          500: '#2f6f4e',
+          600: '#255a3f',
+          700: '#1f4734',
         },
       },
       borderRadius: {
@@ -28,6 +35,7 @@ export default {
       },
       fontFamily: {
         sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans SC"', 'sans-serif'],
+        mono: ['"SFMono-Regular"', '"Cascadia Code"', '"Roboto Mono"', 'monospace'],
       },
       keyframes: {
         "fade-in": {
@@ -62,4 +70,3 @@ export default {
   },
   plugins: [],
 }
-

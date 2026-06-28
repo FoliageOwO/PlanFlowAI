@@ -21,8 +21,8 @@ const priorityLabel: Record<string, string> = { URGENT: '紧急', HIGH: '高', M
 const priorityClass: Record<string, string> = {
   URGENT: 'border-l-red-500 bg-red-50/30',
   HIGH: 'border-l-orange-500 bg-orange-50/30',
-  MEDIUM: 'border-l-blue-500 bg-blue-50/30',
-  LOW: 'border-l-slate-300 bg-slate-50/50',
+  MEDIUM: 'border-l-zinc-400 bg-zinc-50/40',
+  LOW: 'border-l-zinc-300 bg-zinc-50/50',
 }
 const priorityBadgeV: Record<string, 'destructive' | 'warning' | 'default' | 'secondary'> = {
   URGENT: 'destructive', HIGH: 'warning', MEDIUM: 'default', LOW: 'secondary',
@@ -34,13 +34,13 @@ function TaskCard({ task, onClick }: { task: TaskItem; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className={`pl-3 pr-4 py-3 cursor-pointer rounded-lg border border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm hover:translate-x-1 transition-all duration-150 border-l-4 ${priorityClass[task.priority]}`}
+      className={`pl-3 pr-4 py-3 cursor-pointer rounded-md border border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 transition-all duration-150 border-l-4 ${priorityClass[task.priority]}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-sm text-slate-900 truncate">{task.title}</p>
+          <p className="font-medium text-sm text-zinc-950 truncate">{task.title}</p>
           <div className="flex items-center gap-2 mt-1.5">
-            <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+            <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-zinc-400'}`}>
               <Clock className="w-3 h-3" />
               {!hasDeadline ? '无截止时间' :
                isOverdue
@@ -96,16 +96,17 @@ export default function Dashboard() {
 
   return (
     <div className="py-4 space-y-5 animate-fade-in">
-      {/* Hero / Quick Input Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-blue-600 p-6 md:p-8">
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-1/3 w-48 h-48 rounded-full bg-white/5 translate-y-1/2" />
-        <div className="absolute top-1/2 left-1/4 w-24 h-24 rounded-full bg-white/10 blur-2xl" />
+      {/* Quick Input Section */}
+      <div className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 md:p-6">
+        <div className="absolute left-0 top-0 h-full w-1 bg-zinc-950" />
         <div className="relative z-10">
-          <h2 className="text-lg md:text-xl font-bold text-white mb-1 tracking-tight">欢迎回来</h2>
-          <p className="text-blue-100 text-sm mb-5">
-            输入一段文字或上传文件，AI 自动帮你生成任务计划
-          </p>
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">Plan inbox</p>
+              <h2 className="mt-1 text-lg md:text-xl font-semibold text-zinc-950 tracking-tight">今天要整理什么？</h2>
+            </div>
+            <Badge variant="outline" className="hidden sm:inline-flex font-mono">AI parser</Badge>
+          </div>
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Input
@@ -113,10 +114,10 @@ export default function Dashboard() {
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleQuickInput() }}
-                className="h-11 bg-white border-transparent text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-400 focus-visible:ring-offset-0 shadow-lg"
+                className="h-11 text-zinc-950"
               />
             </div>
-            <Button onClick={handleQuickInput} variant="gradient" size="lg" className="h-11 px-5 font-semibold">
+            <Button onClick={handleQuickInput} size="lg" className="h-11 px-5 font-semibold">
               <Send className="w-4 h-4 mr-1.5" />
               提交
             </Button>
@@ -125,7 +126,7 @@ export default function Dashboard() {
             variant="ghost"
             size="sm"
             onClick={() => navigate('/input')}
-            className="mt-3 text-blue-200 hover:text-white hover:bg-white/10"
+            className="mt-3 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100"
           >
             <Upload className="w-3.5 h-3.5 mr-1.5" />
             上传文件
@@ -136,18 +137,18 @@ export default function Dashboard() {
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: '今日待办', value: todayTasks.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: '今日待办', value: todayTasks.length, icon: Calendar, color: 'text-zinc-800', bg: 'bg-zinc-100' },
           { label: '即将截止', value: upcomingTasks.length, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-50' },
           { label: '已过期', value: overdueTasks.length, icon: AlertTriangle, color: overdueTasks.length > 0 ? 'text-red-500' : 'text-slate-400', bg: 'bg-red-50' },
-          { label: '总计', value: totalTasks, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: '总计', value: totalTasks, icon: CheckCircle2, color: 'text-pine-700', bg: 'bg-pine-50' },
         ].map((stat, i) => (
-          <Card key={i} className="border-slate-100">
+          <Card key={i}>
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
               <div>
-                <p className="text-xs text-slate-500">{stat.label}</p>
+                <p className="text-xs text-zinc-500">{stat.label}</p>
                 {loading ? (
                   <Skeleton className="h-7 w-8 mt-0.5" />
                 ) : (
@@ -162,16 +163,16 @@ export default function Dashboard() {
       {/* Task Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Today */}
-        <Card className="border-slate-100">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
+                <Calendar className="w-4 h-4 text-zinc-700" />
                 今日待办
                 {todayTasks.length > 0 && <Badge variant="default" className="text-[10px]">{todayTasks.length}</Badge>}
               </CardTitle>
               {todayTasks.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=today')} className="text-xs text-slate-400 h-auto p-0 hover:text-blue-600">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=today')} className="text-xs text-zinc-400 h-auto p-0 hover:text-zinc-950">
                   全部 <ChevronRight className="w-3 h-3 ml-0.5" />
                 </Button>
               )}
@@ -191,7 +192,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Upcoming */}
-        <Card className="border-slate-100">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -200,7 +201,7 @@ export default function Dashboard() {
                 {upcomingTasks.length > 0 && <Badge variant="warning" className="text-[10px]">{upcomingTasks.length}</Badge>}
               </CardTitle>
               {upcomingTasks.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=due')} className="text-xs text-slate-400 h-auto p-0 hover:text-blue-600">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=due')} className="text-xs text-zinc-400 h-auto p-0 hover:text-zinc-950">
                   全部 <ChevronRight className="w-3 h-3 ml-0.5" />
                 </Button>
               )}
@@ -220,7 +221,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Overdue */}
-        <Card className="border-slate-100">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -229,7 +230,7 @@ export default function Dashboard() {
                 {overdueTasks.length > 0 && <Badge variant="destructive" className="text-[10px]">{overdueTasks.length}</Badge>}
               </CardTitle>
               {overdueTasks.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=overdue')} className="text-xs text-slate-400 h-auto p-0 hover:text-blue-600">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tasks?filter=overdue')} className="text-xs text-zinc-400 h-auto p-0 hover:text-zinc-950">
                   全部 <ChevronRight className="w-3 h-3 ml-0.5" />
                 </Button>
               )}
@@ -250,14 +251,14 @@ export default function Dashboard() {
       </div>
 
       {/* AI Tip */}
-      <Card className="border-slate-200 bg-gradient-to-r from-slate-50 to-orange-50/30">
+      <Card className="border-dashed bg-zinc-50/60">
         <CardContent className="p-4 flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-blue-600" />
+          <div className="w-10 h-10 rounded-lg bg-white border border-zinc-200 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-5 h-5 text-zinc-700" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-800">使用提示</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-sm font-semibold text-zinc-900">使用提示</p>
+            <p className="text-xs text-zinc-500 mt-0.5">
               你可以输入一段课程公告、作业要求、图片截图等，AI 会自动识别任务、设置截止时间、生成检查清单
             </p>
           </div>

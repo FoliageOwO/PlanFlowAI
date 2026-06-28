@@ -181,7 +181,7 @@ export default function TaskList() {
 
       {/* Batch Action Bar */}
       {selectedIds.size > 0 && (
-        <Card className="mb-4 border-blue-200 bg-blue-50"><CardContent className="p-3">
+        <Card className="mb-4 border-zinc-300 bg-zinc-50"><CardContent className="p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Checkbox checked={selectedIds.size === tasks.length}
@@ -189,8 +189,8 @@ export default function TaskList() {
                   if (selectedIds.size === tasks.length) setSelectedIds(new Set())
                   else setSelectedIds(new Set(tasks.map(t => t.id)))
                 }} />
-              <span className="text-sm font-medium text-blue-800">已选 {selectedIds.size}/{tasks.length}</span>
-              <Button variant="link" size="sm" className="text-xs h-auto p-0 text-blue-600"
+              <span className="text-sm font-medium text-zinc-800">已选 {selectedIds.size}/{tasks.length}</span>
+              <Button variant="link" size="sm" className="text-xs h-auto p-0 text-zinc-700"
                 onClick={() => setSelectedIds(new Set())}>取消选择</Button>
             </div>
             <div className="flex gap-2">
@@ -210,7 +210,7 @@ export default function TaskList() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2 mb-4">
         {[{ label: '全部', value: stats.total, color: '' },
-          { label: '进行中', value: stats.inProgress, color: 'text-blue-600' },
+          { label: '进行中', value: stats.inProgress, color: 'text-zinc-700' },
           { label: '已过期', value: stats.overdue, color: stats.overdue > 0 ? 'text-red-500' : '' },
           { label: '已完成', value: stats.done, color: 'text-emerald-600' }].map((s, i) => (
           <Card key={i} className="border-slate-100"><CardContent className="p-3 text-center">
@@ -254,8 +254,8 @@ export default function TaskList() {
             return (
               <div key={task.id}
                 className={`flex items-center gap-3 p-4 bg-white rounded-xl border transition-all duration-150 cursor-pointer
-                  hover:-translate-y-0.5 hover:shadow-sm hover:border-blue-200
-                  ${isSelected ? 'border-blue-300 bg-blue-50/50 ring-1 ring-blue-200' : 'border-slate-100'}`}
+                  hover:-translate-y-0.5 hover:shadow-sm hover:border-zinc-300
+                  ${isSelected ? 'border-zinc-500 bg-zinc-50/70 ring-1 ring-zinc-300' : 'border-slate-100'}`}
               >
                 <Checkbox checked={isSelected}
                   onCheckedChange={() => toggleSelect(task.id)}
@@ -263,7 +263,7 @@ export default function TaskList() {
                   className="flex-shrink-0" />
 
                 <div className="flex items-center gap-3 flex-1 min-w-0" onClick={() => navigate(`/tasks/${task.id}`)}>
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-50 flex items-center justify-center flex-shrink-0 text-zinc-700">
                     {sourceIcon[task.sourceType] || <FileText className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">

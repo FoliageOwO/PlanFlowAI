@@ -73,8 +73,8 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {[
-          { label: '今日注册', value: safeStats.todayRegistrations, icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: '解析任务', value: safeStats.todayParseJobs, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: '今日注册', value: safeStats.todayRegistrations, icon: UserPlus, color: 'text-zinc-700', bg: 'bg-zinc-50' },
+          { label: '解析任务', value: safeStats.todayParseJobs, icon: FileText, color: 'text-zinc-700', bg: 'bg-zinc-100' },
           { label: '成功', value: safeStats.todaySuccessCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', suffix: ` / ${safeStats.todayParseJobs}` },
           { label: '失败', value: safeStats.todayFailCount, icon: XCircle, color: safeStats.todayFailCount > 0 ? 'text-red-500' : 'text-slate-400', bg: 'bg-red-50' },
         ].map((s, i) => (
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
 
       {/* System Health */}
       <Card className="border-slate-100 mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Server className="w-4 h-4 text-blue-600" />系统健康状态</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Server className="w-4 h-4 text-zinc-700" />系统健康状态</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {healthItems.map(item => {
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
       {/* Recent Jobs */}
       <Card className="border-slate-100">
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" />最近解析任务</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-zinc-700" />最近解析任务</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

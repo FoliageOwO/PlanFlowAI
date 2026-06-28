@@ -66,7 +66,7 @@ export default function AdminUsers() {
         {[
           { label: '总用户', value: stats.total, color: '' },
           { label: '活跃', value: stats.active, color: 'text-emerald-600' },
-          { label: '管理员', value: stats.admins, color: 'text-blue-600' },
+          { label: '管理员', value: stats.admins, color: 'text-zinc-700' },
         ].map((s, i) => (
           <Card key={i} className="border-slate-100">
             <CardContent className="p-3 text-center">
@@ -109,7 +109,7 @@ export default function AdminUsers() {
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback className={u.role === 'ADMIN' ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs' : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs'}>
+                            <AvatarFallback className={u.role === 'ADMIN' ? 'bg-zinc-950 text-white text-xs' : 'bg-pine-700 text-white text-xs'}>
                               {(u.nickname || u.username)[0].toUpperCase()}
                             </AvatarFallback>
                           </Avatar>

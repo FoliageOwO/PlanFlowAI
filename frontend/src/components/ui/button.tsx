@@ -5,17 +5,17 @@ import { cn } from "../../lib/utils"
 import { Loader2 } from "lucide-react"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-700 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
   {
     variants: {
       variant: {
-        default: "bg-primary-600 text-white shadow-sm hover:bg-primary-700 hover:shadow-md",
-        destructive: "bg-red-500 text-white shadow-sm hover:bg-red-600",
-        outline: "border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900",
-        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200",
-        ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-        link: "text-primary-600 underline-offset-4 hover:underline",
-        gradient: "bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md hover:shadow-lg hover:from-primary-600 hover:to-primary-800",
+        default: "bg-zinc-950 text-white hover:bg-zinc-800",
+        destructive: "bg-red-600 text-white hover:bg-red-700",
+        outline: "border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 hover:text-zinc-950",
+        secondary: "bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
+        ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950",
+        link: "text-zinc-900 underline-offset-4 hover:underline",
+        gradient: "bg-zinc-950 text-white hover:bg-zinc-800",
       },
       size: {
         default: "h-9 px-4 py-2",

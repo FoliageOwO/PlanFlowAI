@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export function Spinner({ className, size = 24 }: { className?: string; size?: number }) {
-  return <Loader2 className={cn("animate-spin text-blue-600", className)} style={{ width: size, height: size }} />
+  return <Loader2 className={cn("animate-spin text-zinc-800", className)} style={{ width: size, height: size }} />
 }
 
 export function PageSpinner({ tip }: { tip?: string }) {

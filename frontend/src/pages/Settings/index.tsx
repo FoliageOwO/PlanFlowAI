@@ -106,8 +106,8 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4 mb-4">
             <Avatar className="h-14 w-14">
               <AvatarFallback className={isAdmin
-                ? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl'
-                : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xl'
+                ? 'bg-zinc-950 text-white text-xl'
+                : 'bg-pine-700 text-white text-xl'
               }>{firstLetter}</AvatarFallback>
             </Avatar>
             <div>
@@ -133,17 +133,17 @@ export default function SettingsPage() {
               <Button onClick={handleSave} loading={saving}>保存</Button>
             </div>
           </div>
-          {message && <p className="text-xs text-blue-600 mt-2">{message}</p>}
+          {message && <p className="text-xs text-zinc-700 mt-2">{message}</p>}
         </CardContent>
       </Card>
 
       {/* Notification Settings */}
       <Card className="border-slate-100 mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-blue-600" />通知设置</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-zinc-700" />通知设置</CardTitle></CardHeader>
         <CardContent className="space-y-1">
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center"><Bell className="w-4 h-4 text-blue-600" /></div>
+              <div className="w-9 h-9 rounded-lg bg-zinc-50 flex items-center justify-center"><Bell className="w-4 h-4 text-zinc-700" /></div>
               <div>
                 <p className="text-sm font-medium text-slate-700">站内通知</p>
                 <p className="text-xs text-slate-400">接收系统内的通知消息</p>
@@ -170,7 +170,7 @@ export default function SettingsPage() {
         <Card className="border-slate-100 mb-4">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-blue-600" />AI 模型
+              <Cpu className="w-4 h-4 text-zinc-700" />AI 模型
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -202,7 +202,7 @@ export default function SettingsPage() {
 
       {/* Account */}
       <Card className="border-slate-100">
-        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="w-4 h-4 text-blue-600" />账号</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="w-4 h-4 text-zinc-700" />账号</CardTitle></CardHeader>
         <CardContent>
           <Button variant="destructive" size="lg" className="w-full" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" /> 退出登录

@@ -21,7 +21,7 @@ dayjs.extend(isSameOrBefore)
 const typeConfig: Record<string, { color: string; bg: string; dot: string; label: string; border: string }> = {
   TASK_DEADLINE: { color: '#ef4444', bg: 'bg-red-50', dot: 'bg-red-500', label: '截止', border: 'border-red-300' },
   EVENT: { color: '#10b981', bg: 'bg-emerald-50', dot: 'bg-emerald-500', label: '事件', border: 'border-emerald-300' },
-  REMINDER: { color: '#3b82f6', bg: 'bg-blue-50', dot: 'bg-blue-500', label: '提醒', border: 'border-blue-300' },
+  REMINDER: { color: '#3b82f6', bg: 'bg-zinc-50', dot: 'bg-zinc-500', label: '提醒', border: 'border-zinc-400' },
   PLAN_STEP: { color: '#f59e0b', bg: 'bg-orange-50', dot: 'bg-orange-500', label: '计划', border: 'border-orange-300' },
 }
 
@@ -162,7 +162,7 @@ export default function TimelinePage() {
               <div key={label} className="mb-6 relative z-10">
                 <div className="flex items-center gap-3 mb-3 pl-0.5">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0 ${
-                    label === '今天' ? 'bg-blue-600' : label === '明天' ? 'bg-emerald-500' : label === '本周' ? 'bg-orange-500' : 'bg-slate-300'
+                    label === '今天' ? 'bg-zinc-950' : label === '明天' ? 'bg-pine-700' : label === '本周' ? 'bg-orange-500' : 'bg-zinc-300'
                   }`}>
                     {label === '今天' ? '今' : label === '明天' ? '明' : label === '本周' ? '周' : '更'}
                   </div>
@@ -177,7 +177,7 @@ export default function TimelinePage() {
                     return (
                       <div key={evt.id}
                         onClick={() => openEventDetail(evt)}
-                        className="p-4 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-all duration-150 hover:translate-x-1 hover:border-blue-200 relative cursor-pointer"
+                        className="p-4 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-all duration-150 hover:translate-x-1 hover:border-zinc-300 relative cursor-pointer"
                       >
                         <div className={`absolute -left-[37px] top-4 w-3 h-3 rounded-full border-2 bg-white ${cfg.border}`} />
                         <div className="flex items-start justify-between gap-3">
@@ -246,12 +246,12 @@ export default function TimelinePage() {
                   <div key={key}
                     onClick={() => setSelectedDay(key)}
                     className={`min-h-[88px] border-b border-r border-slate-50 p-1 cursor-pointer transition-colors relative
-                      ${isSelected ? 'bg-blue-50' : 'hover:bg-slate-50'}
+                      ${isSelected ? 'bg-zinc-50' : 'hover:bg-slate-50'}
                       ${isOtherMonth ? 'opacity-30' : ''}
                     `}
                   >
                     <div className={`text-xs mb-1 w-6 h-6 flex items-center justify-center rounded-full
-                      ${isToday ? 'bg-blue-600 text-white font-bold' : isSelected && !isToday ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600'}
+                      ${isToday ? 'bg-zinc-950 text-white font-bold' : isSelected && !isToday ? 'bg-zinc-100 text-zinc-900 font-medium' : 'text-slate-600'}
                     `}>
                       {day.date()}
                     </div>
@@ -270,7 +270,7 @@ export default function TimelinePage() {
                         )
                       })}
                       {dayEvents.length > 3 && (
-                        <div className="text-[10px] text-blue-500 pl-1 font-medium">+{dayEvents.length - 3}</div>
+                        <div className="text-[10px] text-zinc-600 pl-1 font-medium">+{dayEvents.length - 3}</div>
                       )}
                     </div>
                   </div>
@@ -359,7 +359,7 @@ export default function TimelinePage() {
               {selectedEvent.sourceEvidence && (
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">来源证据</p>
-                  <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900 whitespace-pre-wrap">
+                  <div className="rounded-lg bg-zinc-50 p-3 text-sm text-zinc-800 whitespace-pre-wrap">
                     {formatSourceEvidence(selectedEvent.sourceEvidence)}
                   </div>
                 </div>

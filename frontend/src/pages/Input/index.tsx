@@ -102,15 +102,15 @@ export default function InputPage() {
   return (
     <div className="py-4 max-w-3xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-slate-900">📝 智能输入</h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <h2 className="text-xl font-semibold text-zinc-950">智能输入</h2>
+        <p className="text-sm text-zinc-500 mt-1">
           输入一段文本或上传文件，AI 会自动识别目标、拆解任务、设置截止时间并生成检查清单
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <Card className="border-slate-100">
+          <Card>
             <CardContent className="p-5">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -133,7 +133,7 @@ export default function InputPage() {
                   <div className="flex flex-wrap gap-1.5">
                     <span className="text-xs text-slate-400 self-center mr-1">试试：</span>
                     {examples.map((ex, i) => (
-                      <Badge key={i} variant="outline" className="cursor-pointer hover:bg-blue-50 hover:border-blue-200 text-xs max-w-[200px] truncate"
+                      <Badge key={i} variant="outline" className="cursor-pointer hover:bg-zinc-100 hover:border-zinc-300 text-xs max-w-[200px] truncate"
                         onClick={() => setTextValue(ex)}>
                         {ex.slice(0, 25)}...
                       </Badge>
@@ -151,22 +151,22 @@ export default function InputPage() {
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
-                      dragOver ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                    className={`border border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200 ${
+                      dragOver ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50'
                     }`}
                   >
                     <input ref={fileInputRef} type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf,.docx"
                       onChange={handleFileSelect} />
-                    <UploadCloud className="w-12 h-12 mx-auto mb-3 text-blue-400" />
-                    <p className="text-sm font-medium text-slate-700">点击或拖拽文件到此区域</p>
-                    <p className="text-xs text-slate-400 mt-1">支持 jpg / png / webp / pdf / docx 格式，单文件不超过 20MB</p>
+                    <UploadCloud className="w-12 h-12 mx-auto mb-3 text-zinc-500" />
+                    <p className="text-sm font-medium text-zinc-800">点击或拖拽文件到此区域</p>
+                    <p className="text-xs text-zinc-400 mt-1">支持 jpg / png / webp / pdf / docx 格式，单文件不超过 20MB</p>
                   </div>
                   {selectedFile && (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 rounded-lg">
-                      <File className="w-5 h-5 text-blue-600" />
+                    <div className="flex items-center gap-3 px-4 py-3 bg-zinc-50 rounded-md border border-zinc-200">
+                      <File className="w-5 h-5 text-zinc-700" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-700 truncate">{selectedFile.name}</p>
-                        <p className="text-xs text-slate-400">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                        <p className="text-sm font-medium text-zinc-800 truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-zinc-400">{(selectedFile.size / 1024).toFixed(1)} KB</p>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>移除</Button>
                     </div>
@@ -183,22 +183,22 @@ export default function InputPage() {
 
         {/* Tips sidebar */}
         <div className="space-y-3">
-          <Card className="border-blue-100 bg-gradient-to-br from-blue-50 to-blue-50/50">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" />AI 能做什么？</CardTitle></CardHeader>
+          <Card className="bg-zinc-50/60">
+            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-zinc-700" />系统会整理什么</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {['从公告文本中提取任务和截止时间','解析图片/PDF中的通知文字','自动生成检查清单和提醒规则','识别时间冲突和潜在风险'].map((t,i) => (
-                <p key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                <p key={i} className="text-xs text-zinc-600 flex items-start gap-2">
                   <Lightbulb className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-0.5" />{t}
                 </p>
               ))}
             </CardContent>
           </Card>
-          <Card className="border-slate-100">
+          <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">支持的文件格式</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <div className="flex gap-1.5"><Badge variant="default" className="text-xs">JPG</Badge><Badge variant="default" className="text-xs">PNG</Badge><Badge variant="default" className="text-xs">WebP</Badge></div>
               <div className="flex gap-1.5"><Badge variant="success" className="text-xs">PDF</Badge><Badge variant="success" className="text-xs">DOCX</Badge></div>
-              <p className="text-xs text-slate-400">单文件最大 20MB</p>
+              <p className="text-xs text-zinc-400">单文件最大 20MB</p>
             </CardContent>
           </Card>
         </div>

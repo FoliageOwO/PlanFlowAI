@@ -141,24 +141,24 @@ export default function JobProgressPage() {
 
       {/* Header */}
       <div className="text-center mb-6">
-        <div className={`w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center shadow-md ${
-          isFailed ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-200' :
-          isCompleted ? 'bg-gradient-to-br from-emerald-500 to-blue-600 shadow-emerald-200' :
-          'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-200'
+        <div className={`w-14 h-14 mx-auto mb-3 rounded-lg flex items-center justify-center ${
+          isFailed ? 'bg-red-600' :
+          isCompleted ? 'bg-pine-700' :
+          'bg-zinc-950'
         }`}>
           {isFailed ? <XCircle className="w-7 h-7 text-white" /> :
            isCompleted ? <CheckCircle2 className="w-7 h-7 text-white" /> :
            <Loader2 className="w-7 h-7 text-white animate-spin" />}
         </div>
-        <h3 className="text-lg font-bold text-slate-900">{isFailed ? '解析失败' : isCompleted ? '解析完成' : '正在解析'}</h3>
-        <p className="text-sm text-slate-500 mt-1">
+        <h3 className="text-lg font-semibold text-zinc-950">{isFailed ? '解析失败' : isCompleted ? '解析完成' : '正在解析'}</h3>
+        <p className="text-sm text-zinc-500 mt-1">
           {isFailed ? errorHelp?.title || '处理过程中出现错误' :
            isCompleted ? `解析完成，生成了 ${job.taskCount ?? 0} 个任务 / ${job.eventCount ?? 0} 个事件` :
            '请稍候，系统正在处理您的输入'}
         </p>
       </div>
 
-      <Card className="border-slate-100">
+      <Card>
         <CardContent className="p-6">
           <Progress value={job.progress} className="mb-8" />
 
@@ -171,10 +171,10 @@ export default function JobProgressPage() {
               return (
                 <div key={s.key} className="flex items-start gap-3">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    done ? 'bg-blue-100 text-blue-600' :
-                    current ? 'bg-blue-600 text-white' :
+                    done ? 'bg-zinc-100 text-zinc-700' :
+                    current ? 'bg-zinc-950 text-white' :
                     failed ? 'bg-red-100 text-red-500' :
-                    'bg-slate-100 text-slate-400'
+                    'bg-zinc-100 text-zinc-400'
                   }`}>
                     {done ? <CheckCircle2 className="w-4 h-4" /> :
                      current ? <Loader2 className="w-4 h-4 animate-spin" /> :
@@ -182,8 +182,8 @@ export default function JobProgressPage() {
                      <span className="text-xs font-semibold">{idx + 1}</span>}
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${done ? 'text-blue-700' : current ? 'text-blue-600' : failed ? 'text-red-600' : 'text-slate-400'}`}>{s.label}</p>
-                    <p className="text-xs text-slate-400">{s.desc}</p>
+                    <p className={`text-sm font-medium ${done ? 'text-zinc-700' : current ? 'text-zinc-950' : failed ? 'text-red-600' : 'text-zinc-400'}`}>{s.label}</p>
+                    <p className="text-xs text-zinc-400">{s.desc}</p>
                   </div>
                 </div>
               )
@@ -211,7 +211,7 @@ export default function JobProgressPage() {
             {isCompleted && (
               <>
                 {job.resultPath || job.taskId ? (
-                  <Button size="lg" onClick={() => navigate(job.resultPath || `/tasks/${job.taskId}`)} className="bg-gradient-to-r from-blue-600 to-emerald-500 text-white hover:from-blue-700 hover:to-emerald-600 shadow-md">
+                  <Button size="lg" onClick={() => navigate(job.resultPath || `/tasks/${job.taskId}`)}>
                     <CheckCircle2 className="w-4 h-4 mr-1.5" /> 查看生成结果
                   </Button>
                 ) : (
@@ -235,10 +235,10 @@ export default function JobProgressPage() {
       </Card>
 
       {!isFailed && !isCompleted && (
-        <Card className="mt-4 border-blue-100 bg-blue-50/50">
+        <Card className="mt-4 bg-zinc-50/70">
           <CardContent className="p-4 flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700">解析完成后，AI 会自动生成任务、检查清单和提醒规则</p>
+            <Sparkles className="w-5 h-5 text-zinc-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-zinc-600">解析完成后，系统会自动生成任务、检查清单和提醒规则</p>
           </CardContent>
         </Card>
       )}

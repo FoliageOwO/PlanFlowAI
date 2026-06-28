@@ -134,11 +134,11 @@ export default function JobResultPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <Card className="border-slate-100">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><ListTodo className="w-4 h-4 text-blue-600" />任务</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2"><ListTodo className="w-4 h-4 text-zinc-700" />任务</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.tasks.length > 0 ? data.tasks.map(task => (
-              <button key={task.id} onClick={() => navigate(`/tasks/${task.id}`)} className="w-full text-left p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-colors">
+              <button key={task.id} onClick={() => navigate(`/tasks/${task.id}`)} className="w-full text-left p-3 rounded-lg border border-slate-100 hover:border-zinc-300 hover:bg-zinc-50/40 transition-colors">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-slate-900">{task.title}</span>
                   {task.priority && <Badge variant="secondary" className="text-[10px]">{task.priority}</Badge>}
@@ -169,7 +169,7 @@ export default function JobResultPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <ResultList title="风险" icon={<ShieldAlert className="w-4 h-4 text-red-500" />} items={risks} empty="未识别到风险" />
         <ResultList title="冲突" icon={<AlertTriangle className="w-4 h-4 text-orange-500" />} items={conflicts} empty="未识别到冲突" />
-        <ResultList title="规划建议" icon={<Lightbulb className="w-4 h-4 text-blue-600" />} items={suggestions} empty="暂无规划建议" />
+        <ResultList title="规划建议" icon={<Lightbulb className="w-4 h-4 text-zinc-700" />} items={suggestions} empty="暂无规划建议" />
       </div>
     </div>
   )

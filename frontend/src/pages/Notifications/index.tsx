@@ -19,7 +19,7 @@ dayjs.locale('zh-cn')
 
 const typeConfig: Record<string, { icon: React.ReactNode; bg: string; label: string }> = {
   TASK_DEADLINE: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, bg: 'bg-red-50', label: '任务截止' },
-  SYSTEM: { icon: <Info className="w-4 h-4 text-blue-500" />, bg: 'bg-blue-50', label: '系统通知' },
+  SYSTEM: { icon: <Info className="w-4 h-4 text-zinc-600" />, bg: 'bg-zinc-50', label: '系统通知' },
   REMINDER: { icon: <Bell className="w-4 h-4 text-orange-500" />, bg: 'bg-orange-50', label: '提醒' },
   SHARE: { icon: <Share2 className="w-4 h-4 text-emerald-500" />, bg: 'bg-emerald-50', label: '分享' },
 }
