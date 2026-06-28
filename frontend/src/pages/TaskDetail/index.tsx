@@ -24,7 +24,7 @@ import http from '../../services/api'
 import type { TaskItem, ChecklistItem, ReminderItem } from '../../services/mockData'
 import {
   ArrowLeft, Edit, Trash2, Plus, CheckCircle2, Clock, Bell, Calendar, Flag, Link2,
-  Sparkles, Send, RotateCw, XCircle, FileText, Image, File, AlertTriangle,
+  Sparkles, Send, RotateCw, XCircle, FileText, Image, File, AlertTriangle, ExternalLink,
 } from 'lucide-react'
 
 dayjs.extend(relativeTime)
@@ -55,6 +55,21 @@ function formatEstimatedDuration(task: TaskItem): string {
   return rest === 0 ? `${hours} 小时` : `${hours} 小时 ${rest} 分钟`
 }
 
+function formatSourceEvidence(value?: string): string {
+  if (!value) return ''
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed === 'string') return parsed
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return value
+  }
+}
+
+function shouldCollapseEvidence(value: string): boolean {
+  return value.length > 220 || value.split(/\r?\n/).length > 4
+}
+
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -63,6 +78,8 @@ export default function TaskDetail() {
   const [checklist, setChecklist] = React.useState<ChecklistItem[]>([])
   const [newCheckItem, setNewCheckItem] = React.useState('')
   const [savingChecklist, setSavingChecklist] = React.useState(false)
+  const [sourceEvidenceExpanded, setSourceEvidenceExpanded] = React.useState(false)
+  const checklistSaveRevision = React.useRef(0)
 
   const fetchTask = React.useCallback(async () => {
     setLoading(true)
@@ -95,6 +112,7 @@ export default function TaskDetail() {
             estimatedMinutes: raw.estimatedMinutes || 0,
             sourceType: raw.sourceType || 'TEXT',
             sourceEvidence: raw.sourceEvidence || '',
+            sourceInputId: raw.sourceInputId ? String(raw.sourceInputId) : undefined,
             constraints,
             reminders: raw.reminders || [],
             checklist: raw.checklist || [],
@@ -112,7 +130,8 @@ export default function TaskDetail() {
 
   React.useEffect(() => { fetchTask() }, [fetchTask])
 
-  const saveChecklist = async (items: ChecklistItem[]) => {
+  const persistChecklist = async (items: ChecklistItem[], rollbackItems: ChecklistItem[]) => {
+    const revision = ++checklistSaveRevision.current
     setSavingChecklist(true)
     try {
       if (isMockMode()) await mockApi.updateChecklist(id!, items)
@@ -120,8 +139,18 @@ export default function TaskDetail() {
         const backendItems = items.map(item => ({ content: item.text, checked: item.done ? 1 : 0 }))
         await http.put(`/tasks/${id}/checklist`, { items: backendItems })
       }
-      setChecklist(items)
-    } catch { } finally { setSavingChecklist(false) }
+      setTask(prev => prev ? { ...prev, checklist: items } : prev)
+    } catch {
+      if (revision === checklistSaveRevision.current) setChecklist(rollbackItems)
+    } finally {
+      if (revision === checklistSaveRevision.current) setSavingChecklist(false)
+    }
+  }
+
+  const saveChecklist = (items: ChecklistItem[]) => {
+    const rollbackItems = checklist
+    setChecklist(items)
+    persistChecklist(items, rollbackItems)
   }
 
   const toggleCheck = (item: ChecklistItem) => {
@@ -274,6 +303,11 @@ export default function TaskDetail() {
   const priCfg = priorityConfig[task.priority]
   const stCfg = statusConfig[task.status]
   const ns = nextStatus[task.status]
+  const sourceEvidence = formatSourceEvidence(task.sourceEvidence)
+  const collapseEvidence = shouldCollapseEvidence(sourceEvidence)
+  const displayedEvidence = collapseEvidence && !sourceEvidenceExpanded
+    ? `${sourceEvidence.slice(0, 220).trimEnd()}...`
+    : sourceEvidence
 
   return (
     <div className="py-4 max-w-4xl mx-auto animate-fade-in">
@@ -334,6 +368,7 @@ export default function TaskDetail() {
                 <CheckCircle2 className={`w-4 h-4 ${checkedCount === checklist.length && checklist.length > 0 ? 'text-emerald-500' : 'text-slate-400'}`} />
                 检查清单
                 {checklist.length > 0 && <Badge variant={checkedCount === checklist.length ? 'success' : 'secondary'} className="text-[10px]">{checkedCount}/{checklist.length}</Badge>}
+                {savingChecklist && <Badge variant="secondary" className="text-[10px]">保存中</Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -363,9 +398,25 @@ export default function TaskDetail() {
           {/* Source Evidence */}
           {task.sourceEvidence && (
             <Card className="border-slate-100">
-              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Link2 className="w-4 h-4 text-blue-600" />来源原文证据</CardTitle></CardHeader>
-              <CardContent>
-                <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{task.sourceEvidence}</div>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-blue-600" />AI 提取依据
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{displayedEvidence}</div>
+                <div className="flex flex-wrap gap-2">
+                  {collapseEvidence && (
+                    <Button variant="outline" size="sm" onClick={() => setSourceEvidenceExpanded(prev => !prev)}>
+                      {sourceEvidenceExpanded ? '收起依据' : '展开依据'}
+                    </Button>
+                  )}
+                  {task.sourceInputId && (
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/inputs/${task.sourceInputId}`)}>
+                      <ExternalLink className="w-4 h-4 mr-1.5" /> 查看完整输入
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}

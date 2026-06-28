@@ -28,23 +28,41 @@ export default function AppLayout() {
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [toast, setToast] = React.useState<{ title: string; content?: string; taskId?: string | null } | null>(null)
 
-  // 初始加载未读数
-  React.useEffect(() => {
-    const loadUnread = async () => {
-      try {
-        const { mockApi, isMockMode } = await import('../services/mockData')
-        const http = (await import('../services/api')).default
-        if (isMockMode()) {
-          const res = await mockApi.getUnreadCount()
-          setUnreadCount(res.data)
-        } else {
-          const res: any = await http.get('/notifications/unread-count')
-          setUnreadCount(res?.data?.count || 0)
-        }
-      } catch { /* silent */ }
-    }
-    loadUnread()
+  const loadUnread = React.useCallback(async () => {
+    try {
+      const { mockApi, isMockMode } = await import('../services/mockData')
+      const http = (await import('../services/api')).default
+      if (isMockMode()) {
+        const res = await mockApi.getUnreadCount()
+        setUnreadCount(res.data)
+      } else {
+        const res: any = await http.get('/notifications/unread-count')
+        setUnreadCount(res?.data?.count || 0)
+      }
+    } catch { /* silent */ }
   }, [])
+
+  React.useEffect(() => { loadUnread() }, [loadUnread])
+
+  React.useEffect(() => {
+    const handleNotificationChange = (event: Event) => {
+      const delta = (event as CustomEvent<{ delta?: number }>).detail?.delta
+      if (typeof delta === 'number') {
+        setUnreadCount(prev => Math.max(0, prev + delta))
+      } else {
+        loadUnread()
+      }
+    }
+    const handleFocus = () => loadUnread()
+    const timer = window.setInterval(loadUnread, 30000)
+    window.addEventListener('planflow:notifications-changed', handleNotificationChange)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('planflow:notifications-changed', handleNotificationChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [loadUnread])
 
   // WebSocket 实时接收通知
   React.useEffect(() => {
@@ -59,7 +77,7 @@ export default function AppLayout() {
     let retry = 0
 
     const connect = () => {
-      ws = new WebSocket(`${protocol}//${host}/ws/notifications?token=${token}`)
+      ws = new WebSocket(`${protocol}//${host}/ws/notifications?token=${encodeURIComponent(token)}`)
 
       ws.onopen = () => { retry = 0 }
       ws.onmessage = (event) => {

@@ -36,6 +36,7 @@ export interface TaskItem {
   estimatedMinutes?: number
   sourceType: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO'
   sourceEvidence: string
+  sourceInputId?: string
   constraints: string[]
   reminders: ReminderItem[]
   checklist: ChecklistItem[]

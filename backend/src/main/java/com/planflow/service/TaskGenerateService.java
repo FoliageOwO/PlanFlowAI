@@ -126,12 +126,19 @@ public class TaskGenerateService {
         // Generate timeline events
         if (result.getEvents() != null) {
             for (AiAnalysisResultDTO.EventItem eventItem : result.getEvents()) {
+                LocalDateTime startTime = parseDateTime(eventItem.getStartTime());
+                if (startTime == null) {
+                    log.warn("Skip timeline event without valid startTime: title={}, startTime={}",
+                            eventItem.getTitle(), eventItem.getStartTime());
+                    continue;
+                }
                 TimelineEvent event = new TimelineEvent();
                 event.setUserId(userId);
                 event.setSourceInputId(sourceInputId);
-                event.setTitle(eventItem.getTitle());
+                event.setTitle(eventItem.getTitle() == null || eventItem.getTitle().isBlank()
+                        ? "未命名日程" : eventItem.getTitle());
                 event.setEventType("EVENT");
-                event.setStartTime(parseDateTime(eventItem.getStartTime()));
+                event.setStartTime(startTime);
                 event.setEndTime(parseDateTime(eventItem.getEndTime()));
                 event.setLocation(eventItem.getLocation());
                 event.setDescription(eventItem.getDescription());

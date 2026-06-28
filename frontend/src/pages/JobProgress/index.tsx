@@ -190,16 +190,6 @@ export default function JobProgressPage() {
             })}
           </div>
 
-          {/* Current stage */}
-          {!isFailed && !isCompleted && (
-            <div className="mt-6 text-center py-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700 flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                当前阶段：{stageLabel[currentStageKey] || currentStageKey}
-              </p>
-            </div>
-          )}
-
           {/* Actions */}
           <div className="mt-6 text-center space-y-3">
             {isFailed && (

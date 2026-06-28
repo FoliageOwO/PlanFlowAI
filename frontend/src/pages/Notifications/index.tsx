@@ -24,6 +24,10 @@ const typeConfig: Record<string, { icon: React.ReactNode; bg: string; label: str
   SHARE: { icon: <Share2 className="w-4 h-4 text-emerald-500" />, bg: 'bg-emerald-50', label: '分享' },
 }
 
+function notifyUnreadCountChanged(delta?: number) {
+  window.dispatchEvent(new CustomEvent('planflow:notifications-changed', { detail: { delta } }))
+}
+
 export default function NotificationsPage() {
   const navigate = useNavigate()
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([])
@@ -53,19 +57,38 @@ export default function NotificationsPage() {
   React.useEffect(() => { load() }, [load])
 
   const markAllRead = async () => {
+    const previous = notifications
+    const previousTotal = total
+    setNotifications(prev => tab === 'unread' ? [] : prev.map(item => ({ ...item, read: true })))
+    if (tab === 'unread') setTotal(0)
+    notifyUnreadCountChanged()
     try {
       if (isMockMode()) await mockApi.markAllNotificationsRead()
       else await http.post('/notifications/read-all')
       load()
-    } catch { }
+    } catch {
+      setNotifications(previous)
+      setTotal(previousTotal)
+      notifyUnreadCountChanged()
+    }
   }
 
   const markRead = async (item: NotificationItem) => {
     if (item.read) return
+    const previous = notifications
+    const previousTotal = total
+    setNotifications(prev => tab === 'unread'
+      ? prev.filter(notification => notification.id !== item.id)
+      : prev.map(notification => notification.id === item.id ? { ...notification, read: true } : notification))
+    if (tab === 'unread') setTotal(prev => Math.max(0, prev - 1))
+    notifyUnreadCountChanged(-1)
     try {
       if (!isMockMode()) await http.patch(`/notifications/${item.id}/read`)
-      load()
-    } catch { }
+    } catch {
+      setNotifications(previous)
+      setTotal(previousTotal)
+      notifyUnreadCountChanged()
+    }
   }
 
   const renderItem = (item: NotificationItem) => {
