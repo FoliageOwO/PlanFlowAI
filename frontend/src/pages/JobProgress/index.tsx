@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/badge'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { JobItem } from '../../services/mockData'
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle } from 'lucide-react'
 
 const stageLabel: Record<string, string> = {
   PENDING: '等待处理', RUNNING: '处理中',
@@ -233,14 +233,6 @@ export default function JobProgressPage() {
           </div>
         </CardContent>
       </Card>
-
-      {!isFailed && !isCompleted && (
-        <Card className="mt-4 bg-zinc-50/70">
-          <CardContent className="p-4 flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-zinc-600 flex-shrink-0 mt-0.5" />
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

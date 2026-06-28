@@ -21,7 +21,7 @@ Output schema:
     "checklist": ["same content as preparationChecklist for backward compatibility"],
     "duringEventInstructions": ["instructions that are only executed during the event/exam/meeting/submission itself"],
     "referenceInfo": ["facts the user may need to read but should not tick off"],
-    "suggestedReminders": [{ "title": "reminder title", "content": "reminder content", "remindAt": "YYYY-MM-DD HH:mm:ss" }],
+    "suggestedReminders": [{ "title": "reminder title", "content": "reminder content", "remindAt": "YYYY-MM-DD HH:mm:ss", "channel": "IN_APP|LOCAL_APP|EMAIL|SMS" }],
     "sourceEvidence": "short quote or paraphrase from the original text"
   }],
   "events": [{
@@ -41,7 +41,7 @@ Classification rules:
 1. preparationChecklist is for before-the-event actions only. The user should be able to finish each item before the event/deadline and tick it off in the app.
 2. duringEventInstructions is for actions performed inside an exam, meeting, classroom, interview, submission portal, or other live context. These must not appear in preparationChecklist/checklist.
 3. referenceInfo is for facts such as exam sections, score distribution, teacher names, policy details, addresses, and explanatory background. These must not appear in preparationChecklist/checklist.
-4. suggestedReminders is for time-based nudges, including arrival time, preparation checks, and deadline warnings.
+4. suggestedReminders is for time-based nudges, including arrival time, preparation checks, and deadline warnings. Use channel "EMAIL" only when the original text explicitly asks for email reminders or the user explicitly requests email notification in the input; otherwise use "IN_APP".
 5. Merge requirements that belong to the same context and deadline into one task. Use preparationChecklist to separate pre-work deliverables.
 6. If a timed event exists, create an event and also create a related task whose deadline is the event start time.
 7. Never invent requirements. Preserve uncertainty in description if the source is ambiguous.

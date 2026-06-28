@@ -56,6 +56,7 @@ public class AiAnalysisResultDTO {
         private String title;
         private String content;
         private String remindAt;
+        private String channel;
     }
 
     @Data

@@ -97,7 +97,7 @@ public class TaskGenerateService {
                         rule.setTitle(sr.getTitle());
                         rule.setContent(sr.getContent());
                         rule.setRemindAt(parseDateTime(sr.getRemindAt()));
-                        rule.setChannel("IN_APP");
+                        rule.setChannel(normalizeReminderChannel(sr.getChannel()));
                         rule.setStatus("PENDING");
                         rule.setCreatedAt(LocalDateTime.now());
                         rule.setUpdatedAt(LocalDateTime.now());
@@ -199,6 +199,15 @@ public class TaskGenerateService {
         rule.setCreatedAt(LocalDateTime.now());
         rule.setUpdatedAt(LocalDateTime.now());
         reminderRuleMapper.insert(rule);
+    }
+
+    private String normalizeReminderChannel(String channel) {
+        if (channel == null || channel.isBlank()) return "IN_APP";
+        String normalized = channel.trim().toUpperCase();
+        return switch (normalized) {
+            case "IN_APP", "LOCAL_APP", "BROWSER", "EMAIL", "SMS" -> normalized;
+            default -> "IN_APP";
+        };
     }
 
     private LocalDateTime parseDateTime(String dateTimeStr) {

@@ -38,7 +38,14 @@ public class NotificationChannelManager {
                     } catch (Exception e) {
                         log.error("Channel {} failed to send notification id={}",
                                 ch.channelType(), notification.getId(), e);
+                        throw new NotificationDispatchException(ch.channelType(), e);
                     }
                 });
+    }
+
+    private static class NotificationDispatchException extends RuntimeException {
+        NotificationDispatchException(String channelType, Throwable cause) {
+            super("Notification channel failed: " + channelType, cause);
+        }
     }
 }
