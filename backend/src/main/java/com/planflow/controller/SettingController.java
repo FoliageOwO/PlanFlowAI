@@ -18,6 +18,11 @@ public class SettingController {
         return ApiResponse.success(setting);
     }
 
+    @GetMapping("/ai-status")
+    public ApiResponse getAiStatus() {
+        return ApiResponse.success(settingService.getAiStatus());
+    }
+
     @PatchMapping
     public ApiResponse updateSettings(@RequestBody UserSetting updates) {
         UserSetting updated = settingService.updateSetting(updates);

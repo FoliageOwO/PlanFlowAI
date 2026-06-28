@@ -20,12 +20,15 @@ public class NotificationService {
     private final SecurityUtils securityUtils;
     private final com.planflow.notification.NotificationChannelManager channelManager;
 
-    public Page<Notification> getUserNotifications(int page, int size) {
+    public Page<Notification> getUserNotifications(int page, int size, boolean unreadOnly) {
         Long userId = securityUtils.getCurrentUserId();
         Page<Notification> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<Notification>()
-                .eq(Notification::getUserId, userId)
-                .orderByDesc(Notification::getCreatedAt);
+                .eq(Notification::getUserId, userId);
+        if (unreadOnly) {
+            wrapper.eq(Notification::getReadStatus, "UNREAD");
+        }
+        wrapper.orderByDesc(Notification::getCreatedAt);
         return notificationMapper.selectPage(pageParam, wrapper);
     }
 

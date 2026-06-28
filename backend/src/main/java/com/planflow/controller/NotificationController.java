@@ -20,12 +20,26 @@ public class NotificationController {
     @GetMapping
     public ApiResponse getUserNotifications(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Page<Notification> result = notificationService.getUserNotifications(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "false") boolean unreadOnly) {
+        Page<Notification> result = notificationService.getUserNotifications(page, size, unreadOnly);
         Map<String, Object> data = new HashMap<>();
-        data.put("list", result.getRecords());
+        data.put("list", result.getRecords().stream().map(this::toNotificationItem).toList());
         data.put("total", result.getTotal());
         return ApiResponse.success(data);
+    }
+
+    private Map<String, Object> toNotificationItem(Notification notification) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("id", String.valueOf(notification.getId()));
+        item.put("type", notification.getType());
+        item.put("title", notification.getTitle());
+        item.put("content", notification.getContent());
+        item.put("read", "READ".equals(notification.getReadStatus()));
+        item.put("relatedTaskId", notification.getTaskId() != null ? String.valueOf(notification.getTaskId()) : null);
+        item.put("taskId", notification.getTaskId() != null ? String.valueOf(notification.getTaskId()) : null);
+        item.put("createdAt", notification.getCreatedAt());
+        return item;
     }
 
     @GetMapping("/unread-count")
@@ -44,8 +58,7 @@ public class NotificationController {
         }
     }
 
-    @PatchMapping("/read-all")
-    @PostMapping("/read-all")
+    @RequestMapping(value = "/read-all", method = {RequestMethod.PATCH, RequestMethod.POST})
     public ApiResponse markAllAsRead() {
         notificationService.markAllAsRead();
         return ApiResponse.success();

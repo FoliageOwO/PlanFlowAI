@@ -11,7 +11,6 @@
 | [DESIGN.md](./DESIGN.md) | **系统设计文档** — 架构、模块、数据模型、API、安全、关键决策 | 开发者、评审 |
 | [REQUIREMENTS.md](./REQUIREMENTS.md) | **需求规格说明书** — 功能需求、非功能需求、MVP 范围 | 产品、开发者、评审 |
 | [ROADMAP.md](./ROADMAP.md) | **开发排期与进度** — 阶段分解、TODO 清单、进度跟踪 | 项目团队 |
-| [PROJECT.legacy.md](./PROJECT.legacy.md) | **旧版详细设计（归档）** — 含完整代码片段、建表 SQL、API 示例 | 历史参考 |
 
 ---
 

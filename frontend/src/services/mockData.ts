@@ -33,6 +33,7 @@ export interface TaskItem {
   priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'
   status: 'TODO' | 'DOING' | 'DONE' | 'CANCELLED'
   estimatedHours: number
+  estimatedMinutes?: number
   sourceType: 'TEXT' | 'IMAGE' | 'FILE' | 'AUDIO'
   sourceEvidence: string
   constraints: string[]
@@ -51,17 +52,24 @@ export interface ChecklistItem {
 
 export interface ReminderItem {
   id: string
+  title?: string
+  content?: string
   time: string
-  channel: 'IN_APP' | 'EMAIL' | 'SMS' | 'WEIXIN'
+  channel: 'IN_APP' | 'LOCAL_APP' | 'BROWSER' | 'EMAIL' | 'SMS' | 'WEIXIN'
+  status?: string
 }
 
 export interface JobItem {
   id: string
-  status: 'UPLOADED' | 'TEXT_EXTRACTED' | 'AI_PARSING' | 'COMPLETED' | 'FAILED'
+  status: 'PENDING' | 'RUNNING' | 'UPLOADED' | 'TEXT_EXTRACTED' | 'AI_PARSING' | 'COMPLETED' | 'FAILED'
   progress: number
   stage: string
   errorMessage?: string
   taskId?: string
+  resultPath?: string
+  taskCount?: number
+  eventCount?: number
+  sourceInputId?: string
   createdAt: string
 }
 
@@ -81,6 +89,10 @@ export interface TimelineEvent {
   title: string
   description: string
   time: string
+  endTime?: string
+  location?: string
+  sourceInputId?: string
+  sourceEvidence?: string
   relatedTaskId?: string
 }
 
@@ -94,6 +106,7 @@ export interface AdminStats {
     api: boolean
     database: boolean
     ocr: boolean
+    ai?: boolean
   }
   recentJobs: Array<{
     id: string
@@ -618,7 +631,7 @@ export const mockApi = {
         todayParseJobs: 48,
         todaySuccessCount: 45,
         todayFailCount: 3,
-        systemHealth: { api: true, database: true, ocr: true },
+        systemHealth: { api: true, database: true, ocr: true, ai: true },
         recentJobs: [
           { id: 'job-r1', userName: '测试用户', sourceType: 'TEXT', status: 'COMPLETED', createdAt: fmt(now.subtract(1, 'minute')) },
           { id: 'job-r2', userName: '张三', sourceType: 'IMAGE', status: 'COMPLETED', createdAt: fmt(now.subtract(5, 'minute')) },

@@ -82,7 +82,7 @@ public class ParseJobWorker {
             AiAnalysisResult aiResult = new AiAnalysisResult();
             aiResult.setUserId(job.getUserId());
             aiResult.setSourceInputId(sourceInput.getId());
-            aiResult.setModelName("deepseek-chat");
+            aiResult.setModelName(aiClient.providerName() + "/" + aiClient.modelName());
             aiResult.setSummary(analysisResult.getSummary());
             aiResult.setParsedJson(objectMapper.writeValueAsString(analysisResult));
             aiResult.setCreatedAt(LocalDateTime.now());
@@ -110,6 +110,9 @@ public class ParseJobWorker {
     }
 
     private String extractRawText(SourceInput sourceInput) {
+        if (sourceInput.getRawText() != null && !sourceInput.getRawText().isBlank()) {
+            return sourceInput.getRawText();
+        }
         String sourceType = sourceInput.getSourceType().toUpperCase();
 
         return switch (sourceType) {

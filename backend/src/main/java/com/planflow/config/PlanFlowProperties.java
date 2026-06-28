@@ -21,8 +21,16 @@ public class PlanFlowProperties {
 
     @Data
     public static class Ai {
+        private String provider = "deepseek";
         private String deepseekApiKey = "";
         private String deepseekBaseUrl = "https://api.deepseek.com/v1";
+        private String deepseekModel = "deepseek-v4-pro";
+        private String qwenApiKey = "";
+        private String qwenBaseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        private String qwenModel = "qwen3.7-plus";
+        private String openaiCompatibleApiKey = "";
+        private String openaiCompatibleBaseUrl = "";
+        private String openaiCompatibleModel = "";
     }
 
     @Data

@@ -7,12 +7,13 @@ import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Card, CardContent } from '../../components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Spinner } from '../../components/ui/spinner'
 import EmptyState from '../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { TimelineEvent } from '../../services/mockData'
-import { ChevronLeft, ChevronRight, Clock, Calendar, Bell, Flag, ListCollapse } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, Calendar, ListCollapse, MapPin, ExternalLink } from 'lucide-react'
 
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
@@ -33,6 +34,17 @@ function getGroupLabel(date: dayjs.Dayjs): string {
   return '更晚'
 }
 
+function formatSourceEvidence(value?: string): string {
+  if (!value) return ''
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed === 'string') return parsed
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return value
+  }
+}
+
 export default function TimelinePage() {
   const navigate = useNavigate()
   const [events, setEvents] = React.useState<TimelineEvent[]>([])
@@ -41,6 +53,7 @@ export default function TimelinePage() {
   const [viewDate, setViewDate] = React.useState(today)
   const [viewMode, setViewMode] = React.useState<'timeline' | 'calendar'>('timeline')
   const [selectedDay, setSelectedDay] = React.useState<string>(today.format('YYYY-MM-DD'))
+  const [selectedEvent, setSelectedEvent] = React.useState<TimelineEvent | null>(null)
 
   React.useEffect(() => {
     (async () => {
@@ -56,6 +69,10 @@ export default function TimelinePage() {
             title: evt.title || '',
             description: evt.description || '',
             time: evt.startTime || evt.time || '',
+            endTime: evt.endTime || undefined,
+            location: evt.location || undefined,
+            sourceInputId: evt.sourceInputId ? String(evt.sourceInputId) : undefined,
+            sourceEvidence: evt.sourceEvidence || undefined,
             relatedTaskId: evt.taskId ? String(evt.taskId) : undefined,
           })))
         }
@@ -84,6 +101,30 @@ export default function TimelinePage() {
 
   const selectedEvents = eventsByDate[selectedDay] || []
   const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+
+  const openEventDetail = async (evt: TimelineEvent) => {
+    setSelectedEvent(evt)
+    if (isMockMode()) return
+    try {
+      const res: any = await http.get(`/timeline/${evt.id}`)
+      const raw = res?.data
+      if (!raw) return
+      setSelectedEvent({
+        id: String(raw.id || evt.id),
+        type: raw.eventType || raw.type || evt.type,
+        title: raw.title || evt.title,
+        description: raw.description || '',
+        time: raw.startTime || evt.time,
+        endTime: raw.endTime || undefined,
+        location: raw.location || undefined,
+        sourceInputId: raw.sourceInputId ? String(raw.sourceInputId) : undefined,
+        sourceEvidence: raw.sourceEvidence || undefined,
+        relatedTaskId: raw.taskId ? String(raw.taskId) : undefined,
+      })
+    } catch {
+      // Keep list item details if the detail endpoint is unavailable.
+    }
+  }
 
   // Timeline grouping (must be before early return to keep hook order consistent)
   const grouped = React.useMemo(() => {
@@ -135,10 +176,8 @@ export default function TimelinePage() {
                     const cfg = typeConfig[evt.type] || typeConfig.EVENT
                     return (
                       <div key={evt.id}
-                        onClick={() => evt.relatedTaskId && navigate(`/tasks/${evt.relatedTaskId}`)}
-                        className={`p-4 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-all duration-150 hover:translate-x-1 relative ${
-                          evt.relatedTaskId ? 'cursor-pointer hover:border-blue-200' : ''
-                        }`}
+                        onClick={() => openEventDetail(evt)}
+                        className="p-4 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-all duration-150 hover:translate-x-1 hover:border-blue-200 relative cursor-pointer"
                       >
                         <div className={`absolute -left-[37px] top-4 w-3 h-3 rounded-full border-2 bg-white ${cfg.border}`} />
                         <div className="flex items-start justify-between gap-3">
@@ -155,7 +194,7 @@ export default function TimelinePage() {
                               {evt.description ? ` — ${evt.description}` : ''}
                             </span>
                           </div>
-                          {evt.relatedTaskId && <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />}
+                          <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                         </div>
                       </div>
                     )
@@ -221,7 +260,7 @@ export default function TimelinePage() {
                         const cfg = typeConfig[evt.type] || typeConfig.EVENT
                         return (
                           <div key={evt.id}
-                            onClick={(e) => { e.stopPropagation(); evt.relatedTaskId && navigate(`/tasks/${evt.relatedTaskId}`) }}
+                            onClick={(e) => { e.stopPropagation(); openEventDetail(evt) }}
                             className={`flex items-center gap-1 px-1 py-0.5 rounded text-[11px] leading-tight cursor-pointer ${cfg.bg} hover:opacity-80`}
                             title={evt.title}
                           >
@@ -263,8 +302,8 @@ export default function TimelinePage() {
                     const cfg = typeConfig[evt.type] || typeConfig.EVENT
                     return (
                       <div key={evt.id}
-                        onClick={() => evt.relatedTaskId && navigate(`/tasks/${evt.relatedTaskId}`)}
-                        className={`flex items-center gap-2 p-2 rounded-lg text-sm ${cfg.bg} ${evt.relatedTaskId ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        onClick={() => openEventDetail(evt)}
+                        className={`flex items-center gap-2 p-2 rounded-lg text-sm ${cfg.bg} cursor-pointer hover:opacity-80`}
                       >
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
                         <span className="text-xs text-slate-500 flex-shrink-0 w-10">
@@ -284,6 +323,57 @@ export default function TimelinePage() {
           </div>
         </>
       )}
+
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">{(typeConfig[selectedEvent.type] || typeConfig.EVENT).label}</Badge>
+                {selectedEvent.relatedTaskId && <Badge variant="default">关联任务</Badge>}
+              </div>
+
+              <div className="space-y-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span>
+                    {dayjs(selectedEvent.time).isValid() ? dayjs(selectedEvent.time).format('YYYY-MM-DD HH:mm') : '无开始时间'}
+                    {selectedEvent.endTime && dayjs(selectedEvent.endTime).isValid() ? ` - ${dayjs(selectedEvent.endTime).format('HH:mm')}` : ''}
+                  </span>
+                </div>
+                {selectedEvent.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-slate-400" />
+                    <span>{selectedEvent.location}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                {selectedEvent.description || '暂无详细说明'}
+              </div>
+
+              {selectedEvent.sourceEvidence && (
+                <div>
+                  <p className="text-xs font-medium text-slate-500 mb-1">来源证据</p>
+                  <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900 whitespace-pre-wrap">
+                    {formatSourceEvidence(selectedEvent.sourceEvidence)}
+                  </div>
+                </div>
+              )}
+
+              {selectedEvent.relatedTaskId && (
+                <Button onClick={() => navigate(`/tasks/${selectedEvent.relatedTaskId}`)} className="w-full">
+                  <ExternalLink className="w-4 h-4 mr-1.5" /> 查看任务详情
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

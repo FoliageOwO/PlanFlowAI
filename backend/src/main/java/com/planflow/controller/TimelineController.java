@@ -1,6 +1,7 @@
 package com.planflow.controller;
 import com.planflow.service.*;
 import com.planflow.common.ApiResponse;
+import com.planflow.common.ErrorCode;
 import com.planflow.entity.TimelineEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,5 +28,14 @@ public class TimelineController {
         LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
         List<TimelineEvent> events = timelineService.getTimeline(fromDt, toDt, type);
         return ApiResponse.success(events);
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse getTimelineEvent(@PathVariable Long id) {
+        try {
+            return ApiResponse.success(timelineService.getEvent(id));
+        } catch (Exception e) {
+            return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
+        }
     }
 }

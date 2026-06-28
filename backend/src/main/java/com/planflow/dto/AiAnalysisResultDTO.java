@@ -44,6 +44,9 @@ public class AiAnalysisResultDTO {
         private Integer estimatedMinutes;
         private List<String> constraints;
         private List<String> checklist;
+        private List<String> preparationChecklist;
+        private List<String> duringEventInstructions;
+        private List<String> referenceInfo;
         private List<SuggestedReminder> suggestedReminders;
         private String sourceEvidence;
     }

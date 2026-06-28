@@ -47,13 +47,16 @@ public class ReminderScheduler {
                 channelManager.dispatch(notification);
 
                 // 3. 标记提醒已发送
-                rule.setStatus("SENT");
-                rule.setUpdatedAt(LocalDateTime.now());
-                reminderService.updateReminder(rule.getId(), rule);
+                reminderService.markSentBySystem(rule.getId());
 
                 log.info("Processed reminder: id={}, channels dispatched", rule.getId());
             } catch (Exception e) {
                 log.error("Failed to process reminder: id={}", rule.getId(), e);
+                try {
+                    reminderService.markFailedBySystem(rule.getId(), e.getMessage());
+                } catch (Exception markFailedError) {
+                    log.error("Failed to mark reminder failed: id={}", rule.getId(), markFailedError);
+                }
             }
         }
     }

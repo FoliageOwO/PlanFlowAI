@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -44,7 +45,7 @@ public class TaskGenerateService {
                 task.setUserId(userId);
                 task.setSourceInputId(sourceInputId);
                 task.setTitle(taskItem.getTitle());
-                task.setDescription(taskItem.getDescription());
+                task.setDescription(buildTaskDescription(taskItem));
                 task.setTaskType("AI_EXTRACTED");
                 task.setPriority(taskItem.getPriority() != null ? taskItem.getPriority().toUpperCase() : "MEDIUM");
                 task.setStatus("TODO");
@@ -69,9 +70,10 @@ public class TaskGenerateService {
                 taskCount++;
 
                 // Generate checklist items
-                if (taskItem.getChecklist() != null) {
+                List<String> checklist = getPreparationChecklist(taskItem);
+                if (checklist != null) {
                     int order = 0;
-                    for (String item : taskItem.getChecklist()) {
+                    for (String item : checklist) {
                         TaskChecklistItem checklistItem = new TaskChecklistItem();
                         checklistItem.setUserId(userId);
                         checklistItem.setTaskId(task.getId());
@@ -133,6 +135,13 @@ public class TaskGenerateService {
                 event.setEndTime(parseDateTime(eventItem.getEndTime()));
                 event.setLocation(eventItem.getLocation());
                 event.setDescription(eventItem.getDescription());
+                if (eventItem.getSourceEvidence() != null) {
+                    try {
+                        event.setSourceEvidence(objectMapper.writeValueAsString(eventItem.getSourceEvidence()));
+                    } catch (JsonProcessingException e) {
+                        log.warn("Failed to serialize event source evidence", e);
+                    }
+                }
                 event.setCreatedAt(LocalDateTime.now());
                 event.setUpdatedAt(LocalDateTime.now());
                 timelineEventMapper.insert(event);
@@ -167,6 +176,85 @@ public class TaskGenerateService {
         } catch (Exception e) {
             log.warn("Failed to parse datetime: {}", dateTimeStr);
             return null;
+        }
+    }
+
+    private List<String> getPreparationChecklist(AiAnalysisResultDTO.TaskItem taskItem) {
+        List<String> source = taskItem.getPreparationChecklist() != null
+                ? taskItem.getPreparationChecklist()
+                : taskItem.getChecklist();
+        if (source == null) return null;
+        List<String> result = new ArrayList<>();
+        for (String item : source) {
+            String normalized = item == null ? "" : item.trim();
+            if (!normalized.isBlank()
+                    && !containsEquivalentItem(result, normalized)
+                    && !overlapsExcludedContext(normalized, taskItem)) {
+                result.add(normalized);
+            }
+        }
+        return result;
+    }
+
+    private boolean overlapsExcludedContext(String checklistItem, AiAnalysisResultDTO.TaskItem taskItem) {
+        return overlapsAny(checklistItem, taskItem.getDuringEventInstructions())
+                || overlapsAny(checklistItem, taskItem.getReferenceInfo());
+    }
+
+    private boolean overlapsAny(String checklistItem, List<String> excludedItems) {
+        if (excludedItems == null || excludedItems.isEmpty()) return false;
+        String normalizedChecklist = normalizeForComparison(checklistItem);
+        if (normalizedChecklist.isBlank()) return true;
+        for (String excludedItem : excludedItems) {
+            String normalizedExcluded = normalizeForComparison(excludedItem);
+            if (normalizedExcluded.isBlank()) continue;
+            if (normalizedChecklist.equals(normalizedExcluded)
+                    || normalizedChecklist.length() >= 8 && normalizedExcluded.contains(normalizedChecklist)
+                    || normalizedExcluded.length() >= 8 && normalizedChecklist.contains(normalizedExcluded)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsEquivalentItem(List<String> items, String candidate) {
+        String normalizedCandidate = normalizeForComparison(candidate);
+        for (String item : items) {
+            if (normalizeForComparison(item).equals(normalizedCandidate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeForComparison(String text) {
+        if (text == null) return "";
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char ch = Character.toLowerCase(text.charAt(i));
+            if (Character.isLetterOrDigit(ch)) {
+                builder.append(ch);
+            }
+        }
+        return builder.toString();
+    }
+
+    private String buildTaskDescription(AiAnalysisResultDTO.TaskItem taskItem) {
+        StringBuilder description = new StringBuilder(
+                taskItem.getDescription() != null ? taskItem.getDescription() : "");
+        appendListSection(description, "现场/执行时注意事项", taskItem.getDuringEventInstructions());
+        appendListSection(description, "参考信息", taskItem.getReferenceInfo());
+        return description.toString();
+    }
+
+    private void appendListSection(StringBuilder builder, String title, List<String> items) {
+        if (items == null || items.isEmpty()) return;
+        if (builder.length() > 0) builder.append("\n\n");
+        builder.append(title).append(":\n");
+        for (String item : items) {
+            if (item != null && !item.isBlank()) {
+                builder.append("- ").append(item.trim()).append("\n");
+            }
         }
     }
 }

@@ -18,6 +18,7 @@ public class TimelineEvent {
     private LocalDateTime endTime;
     private String location;
     private String description;
+    private String sourceEvidence;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

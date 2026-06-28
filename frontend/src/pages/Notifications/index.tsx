@@ -36,9 +36,17 @@ export default function NotificationsPage() {
   const load = React.useCallback(async (p?: number) => {
     setLoading(true)
     try {
-      const params = { page: p || page, pageSize, unreadOnly: tab === 'unread' }
+      const params = { page: p || page, size: pageSize, unreadOnly: tab === 'unread' }
       if (isMockMode()) { const res = await mockApi.getNotifications(params); setNotifications(res.data?.list || []); setTotal(res.data?.total || 0) }
-      else { const res: any = await http.get('/notifications', { params }); setNotifications(res?.data?.list || []); setTotal(res?.data?.total || 0) }
+      else {
+        const res: any = await http.get('/notifications', { params })
+        setNotifications((res?.data?.list || []).map((item: any) => ({
+          ...item,
+          read: item.read ?? item.readStatus === 'READ',
+          relatedTaskId: item.relatedTaskId ?? item.taskId,
+        })))
+        setTotal(res?.data?.total || 0)
+      }
     } catch { } finally { setLoading(false) }
   }, [tab, page])
 

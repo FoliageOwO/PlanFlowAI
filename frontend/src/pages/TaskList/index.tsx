@@ -105,7 +105,6 @@ export default function TaskList() {
       setTasks(prev => prev.filter(t => !selectedIds.has(t.id)))
       setTotal(prev => prev - selectedIds.size)
       setSelectedIds(new Set())
-      setSelectMode(false)
     } catch { /* silent */ } finally { setBatchDeleting(false) }
   }
 
@@ -117,16 +116,15 @@ export default function TaskList() {
       }
       setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status: 'DONE' } : t))
       setSelectedIds(new Set())
-      setSelectMode(false)
     } catch { /* silent */ } finally {}
   }
 
   const loadTasks = React.useCallback(async (p?: number) => {
     setLoading(true)
     try {
-      const params: Record<string, any> = { page: p || page, pageSize }
+      const params: Record<string, any> = { page: p || page, size: pageSize }
       if (filter !== 'all') params.filter = filter
-      if (search) params.search = search
+      if (search) params.keyword = search
       if (isMockMode()) {
         const res = await mockApi.getTaskList(params)
         setTasks(res.data?.list || []); setTotal(res.data?.total || 0)
@@ -236,7 +234,7 @@ export default function TaskList() {
           <div className="flex-1 min-w-[200px] ml-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="搜索任务标题..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
+              <Input placeholder="搜索任务标题或描述..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 className="pl-10 h-9 text-sm" />
             </div>
           </div>

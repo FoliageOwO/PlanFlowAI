@@ -9,7 +9,7 @@ import type { AdminStats } from '../../../services/mockData'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
-import { UserPlus, FileText, CheckCircle2, XCircle, Server, Database, Cloud, CheckCircle, X } from 'lucide-react'
+import { UserPlus, FileText, CheckCircle2, XCircle, Server, Database, Cloud, CheckCircle, X, Cpu } from 'lucide-react'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -32,12 +32,27 @@ export default function AdminDashboard() {
 
   if (!stats) return <Card className="border-slate-100"><CardContent className="py-12"><EmptyState description="无法加载统计数据" /></CardContent></Card>
 
-  const successRate = stats.todayParseJobs > 0 ? ((stats.todaySuccessCount / stats.todayParseJobs) * 100).toFixed(1) : '0.0'
+  const safeStats = {
+    todayRegistrations: stats.todayRegistrations ?? 0,
+    todayParseJobs: stats.todayParseJobs ?? 0,
+    todaySuccessCount: stats.todaySuccessCount ?? 0,
+    todayFailCount: stats.todayFailCount ?? 0,
+    systemHealth: {
+      api: stats.systemHealth?.api ?? false,
+      database: stats.systemHealth?.database ?? false,
+      ocr: stats.systemHealth?.ocr ?? false,
+      ai: stats.systemHealth?.ai ?? false,
+    },
+    recentJobs: stats.recentJobs ?? [],
+  }
+
+  const successRate = safeStats.todayParseJobs > 0 ? ((safeStats.todaySuccessCount / safeStats.todayParseJobs) * 100).toFixed(1) : '0.0'
 
   const healthItems = [
     { label: 'API 服务', key: 'api' as const, icon: Server },
     { label: '数据库', key: 'database' as const, icon: Database },
     { label: 'OCR 服务', key: 'ocr' as const, icon: Cloud },
+    { label: 'AI 配置', key: 'ai' as const, icon: Cpu },
   ]
 
   const statusConfig: Record<string, { label: string; variant: 'success' | 'destructive' | 'default' | 'secondary' }> = {
@@ -58,10 +73,10 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {[
-          { label: '今日注册', value: stats.todayRegistrations, icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: '解析任务', value: stats.todayParseJobs, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: '成功', value: stats.todaySuccessCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', suffix: ` / ${stats.todayParseJobs}` },
-          { label: '失败', value: stats.todayFailCount, icon: XCircle, color: stats.todayFailCount > 0 ? 'text-red-500' : 'text-slate-400', bg: 'bg-red-50' },
+          { label: '今日注册', value: safeStats.todayRegistrations, icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: '解析任务', value: safeStats.todayParseJobs, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: '成功', value: safeStats.todaySuccessCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', suffix: ` / ${safeStats.todayParseJobs}` },
+          { label: '失败', value: safeStats.todayFailCount, icon: XCircle, color: safeStats.todayFailCount > 0 ? 'text-red-500' : 'text-slate-400', bg: 'bg-red-50' },
         ].map((s, i) => (
           <Card key={i} className="border-slate-100">
             <CardContent className="p-4 flex items-center gap-3">
@@ -81,9 +96,9 @@ export default function AdminDashboard() {
       <Card className="border-slate-100 mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Server className="w-4 h-4 text-blue-600" />系统健康状态</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {healthItems.map(item => {
-              const ok = stats.systemHealth[item.key]
+              const ok = safeStats.systemHealth[item.key]
               return (
                 <div key={item.key} className={`flex items-center justify-between p-3 rounded-lg border ${ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center gap-2">
@@ -117,7 +132,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {stats.recentJobs.map(job => {
+                {safeStats.recentJobs.map(job => {
                   const st = statusConfig[job.status] || { label: job.status, variant: 'secondary' as const }
                   return (
                     <tr key={job.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">

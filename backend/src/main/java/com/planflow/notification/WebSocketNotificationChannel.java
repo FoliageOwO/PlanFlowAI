@@ -1,8 +1,9 @@
 package com.planflow.notification;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.planflow.common.SecurityUtils;
 import com.planflow.entity.Notification;
+import com.planflow.entity.UserSetting;
+import com.planflow.repository.UserSettingMapper;
 import com.planflow.repository.UserMapper;
 import com.planflow.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +19,22 @@ import java.util.Map;
 public class WebSocketNotificationChannel implements NotificationChannel {
 
     private final NotificationWebSocketHandler wsHandler;
-    private final SecurityUtils securityUtils;
     private final UserMapper userMapper;
+    private final UserSettingMapper userSettingMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public String channelType() { return "websocket"; }
 
     @Override
-    public boolean isEnabled(Long userId) { return true; }
+    public boolean isEnabled(Long userId) {
+        UserSetting setting = userSettingMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserSetting>()
+                        .eq(UserSetting::getUserId, userId));
+        return setting == null
+                || setting.getEnableInAppNotification() == null
+                || setting.getEnableInAppNotification() == 1;
+    }
 
     @Override
     public int getOrder() { return 0; }

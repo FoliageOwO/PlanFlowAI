@@ -31,4 +31,13 @@ public class TimelineService {
 
         return timelineEventMapper.selectList(wrapper);
     }
+
+    public TimelineEvent getEvent(Long id) {
+        Long userId = securityUtils.getCurrentUserId();
+        TimelineEvent event = timelineEventMapper.selectById(id);
+        if (event == null || !event.getUserId().equals(userId)) {
+            throw new RuntimeException("Timeline event not found");
+        }
+        return event;
+    }
 }

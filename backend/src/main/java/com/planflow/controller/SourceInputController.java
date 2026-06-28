@@ -1,9 +1,19 @@
 package com.planflow.controller;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planflow.dto.*;import com.planflow.service.*;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.planflow.common.ApiResponse;
 import com.planflow.common.ErrorCode;
+import com.planflow.entity.AiAnalysisResult;
+import com.planflow.entity.ParseJob;
 import com.planflow.entity.SourceInput;
+import com.planflow.entity.Task;
+import com.planflow.entity.TimelineEvent;
+import com.planflow.repository.AiAnalysisResultMapper;
+import com.planflow.repository.ParseJobMapper;
+import com.planflow.repository.TaskMapper;
+import com.planflow.repository.TimelineEventMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +28,11 @@ import java.util.Map;
 public class SourceInputController {
 
     private final SourceInputService sourceInputService;
+    private final TaskMapper taskMapper;
+    private final TimelineEventMapper timelineEventMapper;
+    private final ParseJobMapper parseJobMapper;
+    private final AiAnalysisResultMapper aiAnalysisResultMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/api/inputs/text")
     public ApiResponse createTextInput(@RequestBody Map<String, String> body) {
@@ -78,6 +93,59 @@ public class SourceInputController {
             return ApiResponse.success(input);
         } catch (Exception e) {
             return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    @GetMapping("/api/inputs/{id}/detail")
+    public ApiResponse getInputDetail(@PathVariable Long id) {
+        try {
+            SourceInput input = sourceInputService.getInput(id);
+            Map<String, Object> data = new HashMap<>();
+            data.put("input", input);
+            data.put("jobs", parseJobMapper.selectList(new LambdaQueryWrapper<ParseJob>()
+                    .eq(ParseJob::getUserId, input.getUserId())
+                    .eq(ParseJob::getSourceInputId, input.getId())
+                    .orderByDesc(ParseJob::getCreatedAt)));
+            data.put("tasks", taskMapper.selectList(new LambdaQueryWrapper<Task>()
+                    .eq(Task::getUserId, input.getUserId())
+                    .eq(Task::getSourceInputId, input.getId())
+                    .orderByAsc(Task::getDeadline)));
+            data.put("events", timelineEventMapper.selectList(new LambdaQueryWrapper<TimelineEvent>()
+                    .eq(TimelineEvent::getUserId, input.getUserId())
+                    .eq(TimelineEvent::getSourceInputId, input.getId())
+                    .orderByAsc(TimelineEvent::getStartTime)));
+
+            AiAnalysisResult aiResult = aiAnalysisResultMapper.selectOne(new LambdaQueryWrapper<AiAnalysisResult>()
+                    .eq(AiAnalysisResult::getUserId, input.getUserId())
+                    .eq(AiAnalysisResult::getSourceInputId, input.getId())
+                    .orderByDesc(AiAnalysisResult::getCreatedAt)
+                    .last("LIMIT 1"));
+            if (aiResult != null) {
+                Map<String, Object> result = new HashMap<>();
+                result.put("id", aiResult.getId());
+                result.put("summary", aiResult.getSummary());
+                result.put("modelName", aiResult.getModelName());
+                result.put("createdAt", aiResult.getCreatedAt());
+                result.put("analysis", objectMapper.readValue(aiResult.getParsedJson(), Map.class));
+                data.put("aiResult", result);
+            }
+            return ApiResponse.success(data);
+        } catch (Exception e) {
+            return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    @PostMapping("/api/inputs/{id}/reparse")
+    public ApiResponse reparseInput(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        try {
+            String rawText = body != null ? body.get("rawText") : null;
+            ParseJob job = sourceInputService.reparseInput(id, rawText);
+            Map<String, Object> data = new HashMap<>();
+            data.put("inputId", id);
+            data.put("jobId", job.getId());
+            return ApiResponse.success(data);
+        } catch (Exception e) {
+            return ApiResponse.error(ErrorCode.BAD_REQUEST, e.getMessage());
         }
     }
 

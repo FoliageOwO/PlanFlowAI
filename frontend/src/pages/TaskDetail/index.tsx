@@ -21,7 +21,7 @@ import {
 import EmptyState from '../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-import type { TaskItem, ChecklistItem } from '../../services/mockData'
+import type { TaskItem, ChecklistItem, ReminderItem } from '../../services/mockData'
 import {
   ArrowLeft, Edit, Trash2, Plus, CheckCircle2, Clock, Bell, Calendar, Flag, Link2,
   Sparkles, Send, RotateCw, XCircle, FileText, Image, File, AlertTriangle,
@@ -43,8 +43,17 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'succes
   CANCELLED: { label: '已取消', variant: 'destructive', nextLabel: '重新打开' },
 }
 const nextStatus: Record<string, TaskItem['status']> = { TODO: 'DOING', DOING: 'DONE', DONE: 'DONE', CANCELLED: 'TODO' }
-const channelLabel: Record<string, string> = { IN_APP: '站内通知', EMAIL: '邮件', SMS: '短信', WEIXIN: '微信', LOCAL_APP: '本地通知' }
+const channelLabel: Record<string, string> = { IN_APP: '站内通知', LOCAL_APP: '本地通知', BROWSER: '浏览器通知', EMAIL: '邮件', SMS: '短信', WEIXIN: '微信' }
 const sourceIcons: Record<string, React.ReactNode> = { TEXT: <FileText className="w-4 h-4" />, IMAGE: <Image className="w-4 h-4" />, FILE: <File className="w-4 h-4" />, AUDIO: <File className="w-4 h-4" /> }
+
+function formatEstimatedDuration(task: TaskItem): string {
+  const minutes = task.estimatedMinutes ?? Math.round((task.estimatedHours || 0) * 60)
+  if (!minutes || minutes <= 0) return '未估算'
+  if (minutes < 60) return `${minutes} 分钟`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest === 0 ? `${hours} 小时` : `${hours} 小时 ${rest} 分钟`
+}
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
@@ -83,7 +92,8 @@ export default function TaskDetail() {
             priority: raw.priority || 'MEDIUM',
             status: raw.status || 'TODO',
             estimatedHours: raw.estimatedMinutes ? Math.round(raw.estimatedMinutes / 60) : 0,
-            sourceType: raw.taskType === 'AI_EXTRACTED' ? 'TEXT' : (raw.sourceType || 'TEXT'),
+            estimatedMinutes: raw.estimatedMinutes || 0,
+            sourceType: raw.sourceType || 'TEXT',
             sourceEvidence: raw.sourceEvidence || '',
             constraints,
             reminders: raw.reminders || [],
@@ -148,6 +158,16 @@ export default function TaskDetail() {
   const [editOpen, setEditOpen] = React.useState(false)
   const [editForm, setEditForm] = React.useState({ title: '', description: '', deadline: '', priority: 'MEDIUM', estimatedHours: 0 })
   const [savingEdit, setSavingEdit] = React.useState(false)
+  const [reminderOpen, setReminderOpen] = React.useState(false)
+  const [editingReminder, setEditingReminder] = React.useState<ReminderItem | null>(null)
+  const [savingReminder, setSavingReminder] = React.useState(false)
+  const [deletingReminderId, setDeletingReminderId] = React.useState<string | null>(null)
+  const [reminderForm, setReminderForm] = React.useState({
+    title: '',
+    content: '',
+    remindAt: '',
+    channel: 'IN_APP',
+  })
 
   const openEdit = () => {
     if (task) {
@@ -160,11 +180,72 @@ export default function TaskDetail() {
     if (!task || !editForm.title.trim()) return
     setSavingEdit(true)
     try {
-      const data = { ...editForm, deadline: editForm.deadline ? dayjs(editForm.deadline).format('YYYY-MM-DD HH:mm:ss') : task.deadline }
+      const data = {
+        title: editForm.title,
+        description: editForm.description,
+        deadline: editForm.deadline ? dayjs(editForm.deadline).format('YYYY-MM-DD HH:mm:ss') : task.deadline,
+        priority: editForm.priority,
+        estimatedMinutes: Math.round((editForm.estimatedHours || 0) * 60),
+      }
       if (isMockMode()) await mockApi.updateTask(id!, data as any)
       else await http.put(`/tasks/${id}`, data)
       setEditOpen(false); fetchTask()
     } catch { } finally { setSavingEdit(false) }
+  }
+
+  const openAddReminder = () => {
+    const defaultTime = task?.deadline
+      ? dayjs(task.deadline).subtract(30, 'minute')
+      : dayjs().add(1, 'hour')
+    setEditingReminder(null)
+    setReminderForm({
+      title: task ? `${task.title} 提醒` : '任务提醒',
+      content: '',
+      remindAt: defaultTime.format('YYYY-MM-DDTHH:mm'),
+      channel: 'IN_APP',
+    })
+    setReminderOpen(true)
+  }
+
+  const openEditReminder = (reminder: ReminderItem) => {
+    setEditingReminder(reminder)
+    setReminderForm({
+      title: reminder.title || (task ? `${task.title} 提醒` : '任务提醒'),
+      content: reminder.content || '',
+      remindAt: reminder.time ? dayjs(reminder.time).format('YYYY-MM-DDTHH:mm') : '',
+      channel: reminder.channel || 'IN_APP',
+    })
+    setReminderOpen(true)
+  }
+
+  const saveReminder = async () => {
+    if (!task || !reminderForm.title.trim() || !reminderForm.remindAt) return
+    setSavingReminder(true)
+    try {
+      const payload = {
+        taskId: Number(task.id),
+        title: reminderForm.title.trim(),
+        content: reminderForm.content.trim(),
+        remindAt: dayjs(reminderForm.remindAt).format('YYYY-MM-DD HH:mm:ss'),
+        channel: reminderForm.channel,
+        status: 'PENDING',
+      }
+      if (!isMockMode()) {
+        if (editingReminder) await http.patch(`/reminders/${editingReminder.id}`, payload)
+        else await http.post('/reminders', payload)
+      }
+      setReminderOpen(false)
+      setEditingReminder(null)
+      fetchTask()
+    } catch { } finally { setSavingReminder(false) }
+  }
+
+  const deleteReminder = async (reminderId: string) => {
+    setDeletingReminderId(reminderId)
+    try {
+      if (!isMockMode()) await http.delete(`/reminders/${reminderId}`)
+      fetchTask()
+    } catch { } finally { setDeletingReminderId(null) }
   }
 
   const handleDelete = async () => {
@@ -299,7 +380,7 @@ export default function TaskDetail() {
               <div className="flex justify-between"><span className="text-slate-500">优先级</span><Badge variant={priCfg.variant}>{priCfg.label}</Badge></div>
               <div className="flex justify-between"><span className="text-slate-500">状态</span><Badge variant={stCfg.variant}>{stCfg.label}</Badge></div>
               <div className="flex justify-between"><span className="text-slate-500">截止时间</span><span className={isOverdue ? 'text-red-500' : ''}>{task.deadline ? dayjs(task.deadline).format('MM-DD HH:mm') : '无'}{isOverdue ? ' (已过期)' : ''}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">预估耗时</span><span>{task.estimatedHours} 小时</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">预估耗时</span><span>{formatEstimatedDuration(task)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">来源类型</span><span className="flex items-center gap-1">{sourceIcons[task.sourceType]}{task.sourceType}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">创建时间</span><span>{dayjs(task.createdAt).format('MM-DD HH:mm')}</span></div>
             </CardContent>
@@ -317,21 +398,40 @@ export default function TaskDetail() {
 
           {/* Reminders */}
           <Card className="border-slate-100">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-orange-500" />提醒规则</CardTitle></CardHeader>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-orange-500" />提醒规则</CardTitle>
+                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={openAddReminder} title="新增提醒">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent>
               {task.reminders.length > 0 ? (
                 <div className="space-y-2">
                   {task.reminders.map(r => (
                     <div key={r.id} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-orange-50">
                       <Bell className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs font-medium">{dayjs(r.time).format('MM-DD HH:mm')}</p>
-                        <Badge variant="secondary" className="text-[10px] px-1 h-auto">{channelLabel[r.channel] || r.channel}</Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{r.title || '任务提醒'}</p>
+                        <p className="text-xs text-slate-500">{dayjs(r.time).format('MM-DD HH:mm')}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Badge variant="secondary" className="text-[10px] px-1 h-auto">{channelLabel[r.channel] || r.channel}</Badge>
+                          {r.status && <Badge variant={r.status === 'PENDING' ? 'warning' : 'secondary'} className="text-[10px] px-1 h-auto">{r.status}</Badge>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEditReminder(r)} title="编辑提醒">
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-red-500 hover:bg-red-50" onClick={() => deleteReminder(r.id)} loading={deletingReminderId === r.id} title="删除提醒">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : <EmptyState description="暂无提醒" />}
+              ) : <EmptyState description="暂无提醒" actionText="新增提醒" onAction={openAddReminder} />}
             </CardContent>
           </Card>
 
@@ -346,7 +446,7 @@ export default function TaskDetail() {
       </div>
 
       {/* Sticky Action Bar */}
-      <div className="sticky bottom-0 bg-white border-t border-slate-100 py-3 mt-4 -mx-4 px-4 rounded-t-xl shadow-lg z-30">
+      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0 bg-white border-t border-slate-100 py-3 mt-4 -mx-4 px-4 rounded-t-xl shadow-lg z-30">
         <div className="flex justify-center gap-3 flex-wrap max-w-4xl mx-auto">
           {task.status !== 'CANCELLED' && (
             <Button size="lg" variant={task.status === 'TODO' ? 'gradient' : 'default'} disabled={task.status === 'DONE'}
@@ -388,6 +488,44 @@ export default function TaskDetail() {
               </div>
             </div>
             <Button className="w-full" onClick={saveEdit} loading={savingEdit}>保存修改</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Dialog */}
+      <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingReminder ? '编辑提醒' : '新增提醒'}</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label>标题</Label>
+              <Input value={reminderForm.title} onChange={e => setReminderForm(p => ({ ...p, title: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>内容</Label>
+              <Textarea rows={3} value={reminderForm.content} onChange={e => setReminderForm(p => ({ ...p, content: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>提醒时间</Label>
+                <Input type="datetime-local" value={reminderForm.remindAt} onChange={e => setReminderForm(p => ({ ...p, remindAt: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>渠道</Label>
+                <Select value={reminderForm.channel} onValueChange={v => setReminderForm(p => ({ ...p, channel: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IN_APP">站内通知</SelectItem>
+                    <SelectItem value="LOCAL_APP">本地通知</SelectItem>
+                    <SelectItem value="BROWSER">浏览器通知</SelectItem>
+                    <SelectItem value="EMAIL">邮件</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button className="w-full" onClick={saveReminder} loading={savingReminder} disabled={!reminderForm.title.trim() || !reminderForm.remindAt}>
+              {editingReminder ? '保存提醒' : '创建提醒'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -9,7 +9,9 @@ import Login from '../pages/Login'
 import Register from '../pages/Register'
 import Dashboard from '../pages/Dashboard'
 import Input from '../pages/Input'
+import InputDetail from '../pages/InputDetail'
 import JobProgress from '../pages/JobProgress'
+import JobResult from '../pages/JobResult'
 import TaskList from '../pages/TaskList'
 import TaskDetail from '../pages/TaskDetail'
 import Timeline from '../pages/Timeline'
@@ -81,7 +83,9 @@ export default function AppRouter() {
       <Route path="/" element={<ProtectedRoute><UserRoute><AppLayout /></UserRoute></ProtectedRoute>}>
         <Route index element={<PageWrapper><Dashboard /></PageWrapper>} />
         <Route path="input" element={<PageWrapper><Input /></PageWrapper>} />
+        <Route path="inputs/:id" element={<PageWrapper><InputDetail /></PageWrapper>} />
         <Route path="jobs/:id" element={<PageWrapper><JobProgress /></PageWrapper>} />
+        <Route path="jobs/:id/result" element={<PageWrapper><JobResult /></PageWrapper>} />
         <Route path="tasks" element={<PageWrapper><TaskList /></PageWrapper>} />
         <Route path="tasks/:id" element={<PageWrapper><TaskDetail /></PageWrapper>} />
         <Route path="timeline" element={<PageWrapper><Timeline /></PageWrapper>} />

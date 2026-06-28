@@ -148,7 +148,7 @@
   - [x] 从 AI JSON 生成 `timeline_event` 记录
   - [x] 从 AI JSON 生成 `reminder_rule` 记录
 - [x] 实现 `ParseJobWorker`（@Scheduled，扫描 PENDING → COMPLETED）
-- [ ] JSON 解析失败时自动重试一次
+- [x] JSON 解析失败时自动重试一次
 - [x] 创建 `device_sync_record` 表
 
 ### 前端
@@ -244,7 +244,7 @@
   - [x] `syncReminders()`
 - [x] App 启动时同步提醒规则
 - [x] App 恢复前台时同步
-- [ ] 任务完成时取消关联本地通知
+- [x] 任务完成时取消关联本地通知
 
 ### 产出物
 
@@ -280,7 +280,7 @@
 
 ### 文档
 
-- [ ] 更新 README.md
+- [x] 更新 README.md
 - [x] 更新 ROADMAP.md 完成状态
 - [ ] 编写答辩 PPT 提纲
 - [ ] 准备演示脚本（5 个场景）

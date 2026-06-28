@@ -19,8 +19,8 @@ public class ReminderController {
     private final SecurityUtils securityUtils;
 
     @GetMapping
-    public ApiResponse getUserReminders() {
-        List<ReminderRule> reminders = reminderService.getUserReminders();
+    public ApiResponse getUserReminders(@RequestParam(required = false) Long taskId) {
+        List<ReminderRule> reminders = reminderService.getUserReminders(taskId);
         return ApiResponse.success(reminders);
     }
 

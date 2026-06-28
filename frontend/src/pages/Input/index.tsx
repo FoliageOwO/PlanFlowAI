@@ -15,6 +15,10 @@ const examples = [
   '机房明天下午2点到4点停电，请提前备份数据和关闭服务器',
 ]
 
+function getRequestErrorMessage(err: any, fallback: string) {
+  return err?.response?.data?.message || err?.message || fallback
+}
+
 export default function InputPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -39,8 +43,8 @@ export default function InputPage() {
         const res: any = await http.post('/inputs/text', { content })
         navigate(`/jobs/${res.data.jobId}`)
       }
-    } catch {
-      setError('提交失败，请重试')
+    } catch (err: any) {
+      setError(getRequestErrorMessage(err, '提交失败，请重试'))
     } finally { setSubmitting(false) }
   }
 
@@ -90,8 +94,8 @@ export default function InputPage() {
         })
         navigate(`/jobs/${res.data.jobId}`)
       }
-    } catch {
-      setError('上传失败，请重试')
+    } catch (err: any) {
+      setError(getRequestErrorMessage(err, '上传失败，请重试'))
     } finally { setSubmitting(false) }
   }
 

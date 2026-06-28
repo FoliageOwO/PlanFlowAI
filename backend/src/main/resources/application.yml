@@ -43,7 +43,15 @@ planflow:
     enabled: ${OCR_ENABLED:false}
     service-url: ${OCR_SERVICE_URL:http://localhost:8000/ocr/image}
   ai:
+    provider: ${AI_PROVIDER:deepseek}
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
     deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/v1}
+    deepseek-model: ${DEEPSEEK_MODEL:deepseek-v4-pro}
+    qwen-api-key: ${QWEN_API_KEY:}
+    qwen-base-url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    qwen-model: ${QWEN_MODEL:qwen3.7-plus}
+    openai-compatible-api-key: ${OPENAI_COMPATIBLE_API_KEY:}
+    openai-compatible-base-url: ${OPENAI_COMPATIBLE_BASE_URL:}
+    openai-compatible-model: ${OPENAI_COMPATIBLE_MODEL:}
   upload:
     dir: ${UPLOAD_DIR:uploads}

@@ -10,7 +10,7 @@ import {
 } from '../components/ui/dropdown-menu'
 import {
   Home, ListTodo, FileText, Clock, Bell,
-  User, LogOut, Settings, LayoutDashboard,
+  User, LogOut, Settings, LayoutDashboard, X,
 } from 'lucide-react'
 
 const navItems = [
@@ -26,6 +26,7 @@ export default function AppLayout() {
   const location = useLocation()
   const { user, logout } = useAuthStore()
   const [unreadCount, setUnreadCount] = React.useState(0)
+  const [toast, setToast] = React.useState<{ title: string; content?: string; taskId?: string | null } | null>(null)
 
   // 初始加载未读数
   React.useEffect(() => {
@@ -52,30 +53,56 @@ export default function AppLayout() {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    const ws = new WebSocket(`${protocol}//${host}/ws/notifications?token=${token}`)
+    let ws: WebSocket | null = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let closedByEffect = false
+    let retry = 0
 
-    ws.onmessage = (event) => {
-      try {
-        const notif = JSON.parse(event.data)
-        // 更新未读数
-        setUnreadCount(prev => prev + 1)
+    const connect = () => {
+      ws = new WebSocket(`${protocol}//${host}/ws/notifications?token=${token}`)
 
-        // 弹出右上角提示（非当前页的通知）
-        if (window.location.pathname !== '/notifications') {
-          // TODO: toast 通知
-        }
-      } catch { /* ignore parse errors */ }
+      ws.onopen = () => { retry = 0 }
+      ws.onmessage = (event) => {
+        try {
+          const notif = JSON.parse(event.data)
+          setUnreadCount(prev => prev + 1)
+
+          if (window.location.pathname !== '/notifications') {
+            setToast({
+              title: notif.title || '新通知',
+              content: notif.content,
+              taskId: notif.taskId ? String(notif.taskId) : null,
+            })
+          }
+        } catch { /* ignore parse errors */ }
+      }
+
+      ws.onclose = () => {
+        if (closedByEffect) return
+        const delay = Math.min(30000, 1000 * 2 ** retry)
+        retry += 1
+        reconnectTimer = setTimeout(connect, delay)
+      }
+
+      ws.onerror = () => {
+        ws?.close()
+      }
     }
 
-    ws.onclose = () => {
-      // 断线后尝试重连
-      setTimeout(() => {
-        // React will re-run effect on clean up
-      }, 5000)
-    }
+    connect()
 
-    return () => ws.close()
+    return () => {
+      closedByEffect = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      ws?.close()
+    }
   }, [])
+
+  React.useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 5000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
@@ -214,6 +241,29 @@ export default function AppLayout() {
       <main className="px-4 pb-24 md:pb-8 max-w-6xl mx-auto w-full min-h-[calc(100vh-56px)]">
         <Outlet />
       </main>
+
+      {toast && (
+        <div className="fixed right-4 top-16 z-[80] w-[min(360px,calc(100vw-32px))] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <Bell className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <button
+              className="flex-1 text-left"
+              onClick={() => {
+                const taskId = toast.taskId
+                setToast(null)
+                if (taskId) navigate(`/tasks/${taskId}`)
+                else navigate('/notifications')
+              }}
+            >
+              <p className="text-sm font-semibold text-slate-900">{toast.title}</p>
+              {toast.content && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{toast.content}</p>}
+            </button>
+            <button className="text-slate-400 hover:text-slate-600" onClick={() => setToast(null)}>
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center h-14 z-50 pb-safe">

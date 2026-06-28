@@ -5,35 +5,35 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(prefix = "planflow.ai", name = "provider", havingValue = "deepseek", matchIfMissing = true)
-public class DeepSeekClient extends OpenAiCompatibleChatClient {
+@ConditionalOnProperty(prefix = "planflow.ai", name = "provider", havingValue = "qwen")
+public class QwenClient extends OpenAiCompatibleChatClient {
 
     private final PlanFlowProperties planFlowProperties;
 
-    public DeepSeekClient(PlanFlowProperties planFlowProperties,
-                          AiPromptBuilder aiPromptBuilder,
-                          AiResultParser aiResultParser) {
+    public QwenClient(PlanFlowProperties planFlowProperties,
+                      AiPromptBuilder aiPromptBuilder,
+                      AiResultParser aiResultParser) {
         super(aiPromptBuilder, aiResultParser);
         this.planFlowProperties = planFlowProperties;
     }
 
     @Override
     protected String baseUrl() {
-        return planFlowProperties.getAi().getDeepseekBaseUrl();
+        return planFlowProperties.getAi().getQwenBaseUrl();
     }
 
     @Override
     protected String apiKey() {
-        return planFlowProperties.getAi().getDeepseekApiKey();
+        return planFlowProperties.getAi().getQwenApiKey();
     }
 
     @Override
     public String providerName() {
-        return "deepseek";
+        return "qwen";
     }
 
     @Override
     public String modelName() {
-        return planFlowProperties.getAi().getDeepseekModel();
+        return planFlowProperties.getAi().getQwenModel();
     }
 }

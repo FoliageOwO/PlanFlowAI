@@ -77,6 +77,24 @@ planflow-ai/
 
 ## 快速开始
 
+### Docker Compose
+
+```bash
+cp .env.example .env
+# 编辑 .env，至少填写 JWT_SECRET 和所选 AI Provider 的 API Key
+
+cd frontend
+npm install
+npm run build
+cd ..
+
+docker compose up --build
+```
+
+默认端口来自 `.env`：Web `WEB_PORT`，后端 `BACKEND_PORT`，MySQL `MYSQL_PORT`，OCR `OCR_PORT`。如果本机端口被占用，直接修改 `.env` 后重新执行 `docker compose up --build`。
+
+### 本地开发
+
 ```
 # 后端
 cd backend && ./mvnw spring-boot:run
@@ -91,7 +109,7 @@ cd frontend && npm install && npm run dev
 cd frontend && npm run build && npx cap sync && npx cap open android
 ```
 
-> 详细配置见 [docs/PROJECT.md](docs/PROJECT.md) | 开发排期见 [docs/ROADMAP.md](docs/ROADMAP.md)
+> 详细设计见 [docs/DESIGN.md](docs/DESIGN.md) | 开发排期见 [docs/ROADMAP.md](docs/ROADMAP.md)
 
 ---
 
@@ -99,9 +117,9 @@ cd frontend && npm run build && npx cap sync && npx cap open android
 
 | 文档 | 说明 |
 |------|------|
-| [架构设计](docs/ARCHITECTURE.md) | 系统架构、模块划分、数据流、插件化方案 |
+| [文档中心](docs/README.md) | 文档目录和阅读建议 |
+| [系统设计](docs/DESIGN.md) | 系统架构、模块划分、数据流、插件化方案 |
 | [需求规格说明书](docs/REQUIREMENTS.md) | 功能需求、非功能需求、MVP 范围 |
-| [详细设计](docs/PROJECT.md) | 数据库、API、前后端设计、测试、部署 |
 | [开发排期](docs/ROADMAP.md) | 分阶段开发计划、TODO 清单 |
 
 ---

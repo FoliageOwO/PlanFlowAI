@@ -2,6 +2,7 @@ package com.planflow.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.planflow.common.SecurityUtils;
+import com.planflow.config.PlanFlowProperties;
 import com.planflow.entity.UserSetting;
 import com.planflow.repository.UserSettingMapper;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -17,6 +19,7 @@ public class SettingService {
 
     private final UserSettingMapper userSettingMapper;
     private final SecurityUtils securityUtils;
+    private final PlanFlowProperties planFlowProperties;
 
     public UserSetting getUserSetting() {
         Long userId = securityUtils.getCurrentUserId();
@@ -50,5 +53,46 @@ public class SettingService {
         userSettingMapper.updateById(setting);
         log.info("Updated settings for userId={}", userId);
         return setting;
+    }
+
+    public Map<String, Object> getAiStatus() {
+        PlanFlowProperties.Ai ai = planFlowProperties.getAi();
+        String provider = ai.getProvider() == null || ai.getProvider().isBlank() ? "deepseek" : ai.getProvider();
+        String baseUrl;
+        String model;
+        String apiKey;
+
+        switch (provider) {
+            case "qwen" -> {
+                baseUrl = ai.getQwenBaseUrl();
+                model = ai.getQwenModel();
+                apiKey = ai.getQwenApiKey();
+            }
+            case "openai-compatible" -> {
+                baseUrl = ai.getOpenaiCompatibleBaseUrl();
+                model = ai.getOpenaiCompatibleModel();
+                apiKey = ai.getOpenaiCompatibleApiKey();
+            }
+            case "deepseek" -> {
+                baseUrl = ai.getDeepseekBaseUrl();
+                model = ai.getDeepseekModel();
+                apiKey = ai.getDeepseekApiKey();
+            }
+            default -> {
+                baseUrl = "";
+                model = "";
+                apiKey = "";
+            }
+        }
+
+        return Map.of(
+                "provider", provider,
+                "model", model == null ? "" : model,
+                "baseUrl", baseUrl == null ? "" : baseUrl,
+                "apiKeyConfigured", apiKey != null && !apiKey.isBlank(),
+                "ready", baseUrl != null && !baseUrl.isBlank()
+                        && model != null && !model.isBlank()
+                        && apiKey != null && !apiKey.isBlank()
+        );
     }
 }

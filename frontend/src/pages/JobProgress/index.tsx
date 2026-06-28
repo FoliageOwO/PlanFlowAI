@@ -11,10 +11,12 @@ import type { JobItem } from '../../services/mockData'
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react'
 
 const stageLabel: Record<string, string> = {
-  UPLOADED: '已上传', TEXT_EXTRACTED: '文本提取', EXTRACTING: '文本提取',
+  PENDING: '等待处理', RUNNING: '处理中',
+  UPLOADED: '已上传', TEXT_EXTRACTED: '文本提取', EXTRACTING: '文本提取', EXTRACTED: '文本提取完成',
   AI_PARSING: 'AI 解析中', AI_ANALYZING: 'AI 解析中', AI_COMPLETED: 'AI 解析完成',
   GENERATING_TASKS: '任务生成', FINALIZING: '收尾中',
   COMPLETED: '任务生成',
+  已上传: '已上传', 文本提取: '文本提取', 'AI 解析中': 'AI 解析中', 任务生成: '任务生成',
 }
 const stages = [
   { key: 'UPLOADED', label: '已上传', desc: '文件已成功上传到服务器' },
@@ -24,10 +26,45 @@ const stages = [
   { key: 'COMPLETED', label: '任务生成', desc: '任务已全部生成完毕' },
 ]
 const stageIndex: Record<string, number> = {
-  UPLOADED: 0, EXTRACTING: 1, TEXT_EXTRACTED: 1,
+  PENDING: 0, RUNNING: 0,
+  UPLOADED: 0, EXTRACTING: 1, TEXT_EXTRACTED: 1, EXTRACTED: 1,
   AI_ANALYZING: 2, AI_PARSING: 2, AI_COMPLETED: 2,
   GENERATING_TASKS: 3, FINALIZING: 3,
-  COMPLETED: 4, FAILED: -1,
+  COMPLETED: 4,
+  已上传: 0, 文本提取: 1, 'AI 解析中': 2, 任务生成: 3,
+}
+
+function getErrorHelp(message?: string | null) {
+  const text = message || ''
+  const lower = text.toLowerCase()
+  if (lower.includes('apikey') || lower.includes('api key') || lower.includes('not configured') || text.includes('未配置')) {
+    return {
+      title: 'AI 配置不可用',
+      detail: '当前 AI Provider 缺少 API Key、Base URL 或模型名。请检查 .env 中的 AI_PROVIDER 以及对应的 *_API_KEY / *_BASE_URL / *_MODEL 配置，然后重启后端。',
+    }
+  }
+  if (lower.includes('ocr') || text.includes('文字识别')) {
+    return {
+      title: 'OCR 服务不可用',
+      detail: '图片文字识别失败。请确认 ocr-service 容器或本地 OCR 服务已启动，OCR_SERVICE_URL 指向 /ocr/image，或改用文本输入。',
+    }
+  }
+  if (lower.includes('json') || lower.includes('parse failed') || text.includes('解析失败')) {
+    return {
+      title: 'AI 返回格式不合法',
+      detail: 'AI 返回内容没有通过结构化 JSON 校验，系统已尝试自动修复一次但仍失败。可以重试，或缩短/改写输入内容后重新提交。',
+    }
+  }
+  if (text.includes('文件不存在') || lower.includes('file')) {
+    return {
+      title: '文件读取失败',
+      detail: '后端无法读取上传文件。请重新上传文件，并确认 uploads 挂载目录可写。',
+    }
+  }
+  return {
+    title: '处理失败',
+    detail: text || '处理过程中出现未知错误，请重试或返回输入页重新提交。',
+  }
 }
 
 export default function JobProgressPage() {
@@ -92,9 +129,11 @@ export default function JobProgressPage() {
     </div>
   )
 
-  const currentIdx = stageIndex[job.status] ?? 0
   const isFailed = job.status === 'FAILED'
   const isCompleted = job.status === 'COMPLETED'
+  const currentStageKey = isCompleted ? 'COMPLETED' : (job.stage || job.status)
+  const currentIdx = stageIndex[currentStageKey] ?? stageIndex[job.status] ?? 0
+  const errorHelp = isFailed ? getErrorHelp(job.errorMessage) : null
 
   return (
     <div className="py-4 max-w-lg mx-auto animate-fade-in">
@@ -113,8 +152,8 @@ export default function JobProgressPage() {
         </div>
         <h3 className="text-lg font-bold text-slate-900">{isFailed ? '解析失败' : isCompleted ? '解析完成' : '正在解析'}</h3>
         <p className="text-sm text-slate-500 mt-1">
-          {isFailed ? job.errorMessage || '处理过程中出现错误' :
-           isCompleted ? '任务已成功生成，点击下方按钮查看' :
+          {isFailed ? errorHelp?.title || '处理过程中出现错误' :
+           isCompleted ? `解析完成，生成了 ${job.taskCount ?? 0} 个任务 / ${job.eventCount ?? 0} 个事件` :
            '请稍候，系统正在处理您的输入'}
         </p>
       </div>
@@ -126,8 +165,8 @@ export default function JobProgressPage() {
           {/* Steps */}
           <div className="space-y-3">
             {stages.map((s, idx) => {
-              const done = idx < currentIdx
-              const current = idx === currentIdx && !isFailed
+              const done = isCompleted || idx < currentIdx
+              const current = idx === currentIdx && !isFailed && !isCompleted
               const failed = idx === currentIdx && isFailed
               return (
                 <div key={s.key} className="flex items-start gap-3">
@@ -156,7 +195,7 @@ export default function JobProgressPage() {
             <div className="mt-6 text-center py-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-700 flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                当前阶段：{stageLabel[job.stage] || job.stage}
+                当前阶段：{stageLabel[currentStageKey] || currentStageKey}
               </p>
             </div>
           )}
@@ -168,16 +207,9 @@ export default function JobProgressPage() {
                 <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-left mb-4">
                   <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-amber-800">
-                    <p className="font-medium mb-1">💡 排查建议：</p>
-                    {job.errorMessage?.includes('OCR') || job.errorMessage?.includes('ocr') ? (
-                      <ul className="list-disc pl-4 space-y-1">
-                        <li>需要启动 OCR 服务才能识别图片文字</li>
-                        <li>在终端执行: <code className="bg-amber-100 px-1 rounded">cd ocr-service &amp;&amp; python app/main.py</code></li>
-                        <li>或者改用「文本输入」方式提交</li>
-                      </ul>
-                    ) : (
-                      <p>{job.errorMessage}</p>
-                    )}
+                    <p className="font-medium mb-1">排查建议</p>
+                    <p>{errorHelp?.detail}</p>
+                    {job.errorMessage && <p className="mt-2 text-amber-700/80 break-words">原始错误：{job.errorMessage}</p>}
                   </div>
                 </div>
                 <div className="flex gap-2 justify-center">
@@ -188,8 +220,8 @@ export default function JobProgressPage() {
             )}
             {isCompleted && (
               <>
-                {job.taskId ? (
-                  <Button size="lg" onClick={() => navigate(`/tasks/${job.taskId}`)} className="bg-gradient-to-r from-blue-600 to-emerald-500 text-white hover:from-blue-700 hover:to-emerald-600 shadow-md">
+                {job.resultPath || job.taskId ? (
+                  <Button size="lg" onClick={() => navigate(job.resultPath || `/tasks/${job.taskId}`)} className="bg-gradient-to-r from-blue-600 to-emerald-500 text-white hover:from-blue-700 hover:to-emerald-600 shadow-md">
                     <CheckCircle2 className="w-4 h-4 mr-1.5" /> 查看生成结果
                   </Button>
                 ) : (

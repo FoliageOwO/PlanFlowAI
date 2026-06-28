@@ -3,9 +3,9 @@ import com.planflow.service.*;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.planflow.common.ApiResponse;
 import com.planflow.common.ErrorCode;
+import com.planflow.entity.SourceInput;
 import com.planflow.entity.Task;
-import com.planflow.entity.TaskChecklistItem;
-import com.planflow.repository.TaskChecklistItemMapper;
+import com.planflow.repository.SourceInputMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -20,21 +20,27 @@ import java.util.stream.Collectors;
 public class TaskController {
 
     private final TaskService taskService;
-    private final TaskChecklistItemMapper checklistItemMapper;
     private final com.planflow.repository.ReminderRuleMapper reminderRuleMapper;
+    private final SourceInputMapper sourceInputMapper;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @GetMapping
     public ApiResponse listTasks(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime to,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long sourceInputId) {
-        Page<Task> result = taskService.listTasks(page, size, status, priority, from, to, keyword, sourceInputId);
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long sourceInputId,
+            @RequestParam(required = false) String filter) {
+        int resolvedSize = pageSize != null ? pageSize : size;
+        String resolvedKeyword = keyword != null && !keyword.isBlank() ? keyword : search;
+        Page<Task> result = taskService.listTasks(page, resolvedSize, status, priority, from, to,
+                resolvedKeyword, sourceInputId, filter);
         // Transform MyBatis Plus Page to frontend-friendly format { list, total }
         Map<String, Object> data = new HashMap<>();
         data.put("list", result.getRecords());
@@ -67,6 +73,7 @@ public class TaskController {
             result.put("id", task.getId());
             result.put("userId", task.getUserId());
             result.put("sourceInputId", task.getSourceInputId());
+            result.put("sourceType", resolveSourceType(task));
             result.put("title", task.getTitle());
             result.put("description", task.getDescription());
             result.put("taskType", task.getTaskType());
@@ -107,12 +114,16 @@ public class TaskController {
             List<Map<String, Object>> reminderItems = reminderRuleMapper.selectList(
                     new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.planflow.entity.ReminderRule>()
                             .eq(com.planflow.entity.ReminderRule::getTaskId, id)
+                            .eq(com.planflow.entity.ReminderRule::getUserId, task.getUserId())
                             .orderByAsc(com.planflow.entity.ReminderRule::getRemindAt)
             ).stream().map(rr -> {
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", String.valueOf(rr.getId()));
+                item.put("title", rr.getTitle());
+                item.put("content", rr.getContent());
                 item.put("time", rr.getRemindAt() != null ? rr.getRemindAt().toString() : "");
                 item.put("channel", rr.getChannel() != null ? rr.getChannel() : "IN_APP");
+                item.put("status", rr.getStatus());
                 return item;
             }).collect(Collectors.toList());
             result.put("reminders", reminderItems);
@@ -133,8 +144,7 @@ public class TaskController {
         }
     }
 
-    @PatchMapping("/{id}")
-    @PutMapping("/{id}")
+    @RequestMapping(value = "/{id}", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ApiResponse updateTask(@PathVariable Long id, @RequestBody Task updates) {
         try {
             Task updated = taskService.updateTask(id, updates);
@@ -144,8 +154,7 @@ public class TaskController {
         }
     }
 
-    @PatchMapping("/{id}/status")
-    @PutMapping("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ApiResponse updateTaskStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String status = body.get("status");
         if (status == null || status.isBlank()) {
@@ -174,24 +183,7 @@ public class TaskController {
         try {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> items = (List<Map<String, Object>>) body.get("items");
-            // Delete old items
-            checklistItemMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TaskChecklistItem>()
-                    .eq(TaskChecklistItem::getTaskId, id));
-            // Insert new items
-            if (items != null) {
-                int order = 0;
-                for (Map<String, Object> item : items) {
-                    TaskChecklistItem ci = new TaskChecklistItem();
-                    ci.setUserId(taskService.getTaskById(id).getUserId());
-                    ci.setTaskId(id);
-                    ci.setContent((String) item.getOrDefault("content", ""));
-                    ci.setChecked(Boolean.TRUE.equals(item.get("checked")) ? 1 : 0);
-                    ci.setSortOrder(order++);
-                    ci.setCreatedAt(LocalDateTime.now());
-                    ci.setUpdatedAt(LocalDateTime.now());
-                    checklistItemMapper.insert(ci);
-                }
-            }
+            taskService.updateChecklist(id, items);
             return ApiResponse.success();
         } catch (Exception e) {
             return ApiResponse.error(ErrorCode.SERVER_ERROR, e.getMessage());
@@ -201,5 +193,14 @@ public class TaskController {
     @GetMapping("/{id}/checklist")
     public ApiResponse getChecklist(@PathVariable Long id) {
         return ApiResponse.success(taskService.getChecklistItems(id));
+    }
+
+    private String resolveSourceType(Task task) {
+        if (task.getSourceInputId() == null) return "MANUAL";
+        SourceInput sourceInput = sourceInputMapper.selectById(task.getSourceInputId());
+        if (sourceInput == null || sourceInput.getSourceType() == null || sourceInput.getSourceType().isBlank()) {
+            return task.getTaskType() != null ? task.getTaskType() : "UNKNOWN";
+        }
+        return sourceInput.getSourceType();
     }
 }

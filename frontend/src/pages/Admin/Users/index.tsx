@@ -28,7 +28,11 @@ export default function AdminUsers() {
         if (res.code === 0) setUsers(res.data?.list || [])
       } else {
         const res: any = await http.get('/admin/users', { params })
-        setUsers(res?.data?.list || [])
+        setUsers((res?.data?.list || []).map((user: any) => ({
+          ...user,
+          id: String(user.id),
+          status: user.status === 1 || user.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED',
+        })))
       }
     } catch { } finally { setLoading(false) }
   }, [])

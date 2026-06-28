@@ -6,12 +6,20 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.planflow.common.SecurityUtils;
 import com.planflow.config.PlanFlowProperties;
 import com.planflow.entity.ParseJob;
+import com.planflow.entity.Notification;
+import com.planflow.entity.ReminderRule;
 import com.planflow.entity.SourceInput;
-import com.planflow.service.ParseJobService;
+import com.planflow.entity.Task;
+import com.planflow.entity.TimelineEvent;
+import com.planflow.repository.NotificationMapper;
+import com.planflow.repository.ReminderRuleMapper;
 import com.planflow.repository.SourceInputMapper;
+import com.planflow.repository.TaskMapper;
+import com.planflow.repository.TimelineEventMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -22,6 +30,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -45,6 +54,10 @@ public class SourceInputService {
     private final ParseJobService parseJobService;
     private final PlanFlowProperties planFlowProperties;
     private final SecurityUtils securityUtils;
+    private final TaskMapper taskMapper;
+    private final TimelineEventMapper timelineEventMapper;
+    private final ReminderRuleMapper reminderRuleMapper;
+    private final NotificationMapper notificationMapper;
 
     public CreateInputResult createTextInput(String content) {
         Long userId = securityUtils.getCurrentUserId();
@@ -147,6 +160,50 @@ public class SourceInputService {
         }
         sourceInputMapper.deleteById(id);
         log.info("Deleted source input: id={}", id);
+    }
+
+    @Transactional
+    public ParseJob reparseInput(Long id, String rawText) {
+        SourceInput input = getInput(id);
+        if (rawText != null && !rawText.isBlank()) {
+            input.setRawText(rawText.trim());
+        }
+        String textForParsing = input.getRawText() != null && !input.getRawText().isBlank()
+                ? input.getRawText()
+                : input.getOriginalText();
+        if (textForParsing == null || textForParsing.isBlank()) {
+            throw new RuntimeException("rawText is required before reparsing");
+        }
+
+        cleanupGeneratedObjects(input);
+        input.setStatus("CREATED");
+        input.setErrorMessage(null);
+        input.setUpdatedAt(LocalDateTime.now());
+        sourceInputMapper.updateById(input);
+        return parseJobService.createJob(input.getUserId(), input.getId());
+    }
+
+    private void cleanupGeneratedObjects(SourceInput input) {
+        Long userId = input.getUserId();
+        Long sourceInputId = input.getId();
+        List<Task> tasks = taskMapper.selectList(new LambdaQueryWrapper<Task>()
+                .eq(Task::getUserId, userId)
+                .eq(Task::getSourceInputId, sourceInputId));
+        List<Long> taskIds = tasks.stream().map(Task::getId).toList();
+        if (!taskIds.isEmpty()) {
+            notificationMapper.delete(new LambdaQueryWrapper<Notification>()
+                    .eq(Notification::getUserId, userId)
+                    .in(Notification::getTaskId, taskIds));
+            reminderRuleMapper.delete(new LambdaQueryWrapper<ReminderRule>()
+                    .eq(ReminderRule::getUserId, userId)
+                    .in(ReminderRule::getTaskId, taskIds));
+            taskMapper.delete(new LambdaQueryWrapper<Task>()
+                    .eq(Task::getUserId, userId)
+                    .eq(Task::getSourceInputId, sourceInputId));
+        }
+        timelineEventMapper.delete(new LambdaQueryWrapper<TimelineEvent>()
+                .eq(TimelineEvent::getUserId, userId)
+                .eq(TimelineEvent::getSourceInputId, sourceInputId));
     }
 
     private void validateFile(MultipartFile file, String sourceType) {
