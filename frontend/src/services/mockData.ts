@@ -56,7 +56,7 @@ export interface ReminderItem {
   title?: string
   content?: string
   time: string
-  channel: 'IN_APP' | 'LOCAL_APP' | 'BROWSER' | 'EMAIL' | 'SMS' | 'WEIXIN'
+  channel: 'IN_APP' | 'LOCAL_APP' | 'BROWSER' | 'EMAIL' | 'SMS' | 'QQ'
   status?: string
 }
 

@@ -9,7 +9,7 @@ import { Separator } from '../../../components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Skeleton } from '../../../components/ui/skeleton'
 import http from '../../../services/api'
-import { Mail, MessageSquare, Server, KeyRound } from 'lucide-react'
+import { Mail, MessageSquare, Server, KeyRound, AtSign } from 'lucide-react'
 
 type NotificationConfig = {
   smtpEnabled: string
@@ -25,6 +25,9 @@ type NotificationConfig = {
   smsAccessKeySecret: string
   smsSignName: string
   smsTemplateCode: string
+  qqEnabled: string
+  qqBaseUrl: string
+  qqBearerToken: string
 }
 
 const defaultConfig: NotificationConfig = {
@@ -41,6 +44,9 @@ const defaultConfig: NotificationConfig = {
   smsAccessKeySecret: '',
   smsSignName: '',
   smsTemplateCode: '',
+  qqEnabled: 'false',
+  qqBaseUrl: '',
+  qqBearerToken: '',
 }
 
 export default function AdminNotifications() {
@@ -86,6 +92,7 @@ export default function AdminNotifications() {
 
   const smtpOn = config.smtpEnabled === 'true'
   const smsOn = config.smsEnabled === 'true'
+  const qqOn = config.qqEnabled === 'true'
 
   return (
     <div className="animate-fade-in max-w-5xl">
@@ -97,6 +104,7 @@ export default function AdminNotifications() {
         <div className="flex items-center gap-2">
           <Badge variant={smtpOn ? 'success' : 'secondary'} className="text-[10px]">SMTP {smtpOn ? '启用' : '关闭'}</Badge>
           <Badge variant={smsOn ? 'success' : 'secondary'} className="text-[10px]">短信 {smsOn ? '启用' : '关闭'}</Badge>
+          <Badge variant={qqOn ? 'success' : 'secondary'} className="text-[10px]">QQ {qqOn ? '启用' : '关闭'}</Badge>
         </div>
       </div>
 
@@ -200,6 +208,33 @@ export default function AdminNotifications() {
               <div className="space-y-1.5">
                 <Label>模板 Code</Label>
                 <Input value={config.smsTemplateCode} onChange={e => update({ smsTemplateCode: e.target.value })} placeholder="SMS_000000000" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-100 xl:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AtSign className="w-4 h-4 text-zinc-700" />QQ 服务
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-slate-700">启用 QQ 通道</p>
+                <p className="text-xs text-slate-400">通过 OneBot HTTP 发送私聊提醒</p>
+              </div>
+              <Switch checked={qqOn} onCheckedChange={checked => update({ qqEnabled: checked ? 'true' : 'false' })} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>OneBot HTTP 地址</Label>
+                <Input value={config.qqBaseUrl} onChange={e => update({ qqBaseUrl: e.target.value })} placeholder="http://127.0.0.1:3000" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Bearer Token</Label>
+                <Input type="password" value={config.qqBearerToken} onChange={e => update({ qqBearerToken: e.target.value })} placeholder="OneBot access token" />
               </div>
             </div>
           </CardContent>

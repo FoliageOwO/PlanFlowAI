@@ -206,6 +206,9 @@ public class AdminController {
         config.put("smsAccessKeySecret", getSystemConfig("notification.sms.access-key-secret", ""));
         config.put("smsSignName", getSystemConfig("notification.sms.sign-name", ""));
         config.put("smsTemplateCode", getSystemConfig("notification.sms.template-code", ""));
+        config.put("qqEnabled", getSystemConfig("notification.qq.enabled", "false"));
+        config.put("qqBaseUrl", getSystemConfig("notification.qq.base-url", ""));
+        config.put("qqBearerToken", getSystemConfig("notification.qq.bearer-token", ""));
         return config;
     }
 
@@ -252,6 +255,9 @@ public class AdminController {
             case "smsAccessKeySecret" -> "短信 AccessKey Secret";
             case "smsSignName" -> "短信签名";
             case "smsTemplateCode" -> "短信模板 Code";
+            case "qqEnabled" -> "是否启用QQ通知通道";
+            case "qqBaseUrl" -> "OneBot HTTP 服务地址";
+            case "qqBearerToken" -> "OneBot Bearer Token";
             default -> "通知通道配置";
         };
     }
@@ -271,6 +277,9 @@ public class AdminController {
             case "smsAccessKeySecret" -> "notification.sms.access-key-secret";
             case "smsSignName" -> "notification.sms.sign-name";
             case "smsTemplateCode" -> "notification.sms.template-code";
+            case "qqEnabled" -> "notification.qq.enabled";
+            case "qqBaseUrl" -> "notification.qq.base-url";
+            case "qqBearerToken" -> "notification.qq.bearer-token";
             default -> key;
         };
     }

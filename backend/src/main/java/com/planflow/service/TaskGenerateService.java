@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planflow.dto.AiAnalysisResultDTO;
 import com.planflow.entity.*;
+import com.planflow.notification.NotificationChannelManager;
 import com.planflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,9 @@ public class TaskGenerateService {
     private final TaskChecklistItemMapper checklistItemMapper;
     private final TimelineEventMapper timelineEventMapper;
     private final ReminderRuleMapper reminderRuleMapper;
+    private final NotificationMapper notificationMapper;
+    private final UserSettingMapper userSettingMapper;
+    private final NotificationChannelManager channelManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
@@ -91,18 +95,21 @@ public class TaskGenerateService {
                 // Generate suggested reminders
                 if (taskItem.getSuggestedReminders() != null) {
                     for (AiAnalysisResultDTO.SuggestedReminder sr : taskItem.getSuggestedReminders()) {
-                        ReminderRule rule = new ReminderRule();
-                        rule.setUserId(userId);
-                        rule.setTaskId(task.getId());
-                        rule.setTitle(sr.getTitle());
-                        rule.setContent(sr.getContent());
-                        rule.setRemindAt(parseDateTime(sr.getRemindAt()));
-                        rule.setChannel(normalizeReminderChannel(sr.getChannel()));
-                        rule.setStatus("PENDING");
-                        rule.setCreatedAt(LocalDateTime.now());
-                        rule.setUpdatedAt(LocalDateTime.now());
-                        reminderRuleMapper.insert(rule);
-                        reminderCount++;
+                        for (String channel : resolveReminderChannels(userId, sr.getChannel())) {
+                            ReminderRule rule = new ReminderRule();
+                            rule.setUserId(userId);
+                            rule.setTaskId(task.getId());
+                            rule.setTitle(sr.getTitle());
+                            rule.setContent(sr.getContent());
+                            rule.setRemindAt(parseDateTime(sr.getRemindAt()));
+                            rule.setChannel(channel);
+                            rule.setStatus("PENDING");
+                            rule.setCreatedAt(LocalDateTime.now());
+                            rule.setUpdatedAt(LocalDateTime.now());
+                            reminderRuleMapper.insert(rule);
+                            dispatchImmediatelyIfDue(rule);
+                            reminderCount++;
+                        }
                     }
                 }
 
@@ -188,26 +195,86 @@ public class TaskGenerateService {
                                         String title, String content, String channel) {
         if (remindAt.isBefore(LocalDateTime.now())) return;
 
-        ReminderRule rule = new ReminderRule();
-        rule.setUserId(userId);
-        rule.setTaskId(taskId);
-        rule.setTitle(title);
-        rule.setContent(content);
-        rule.setRemindAt(remindAt);
-        rule.setChannel(channel);
-        rule.setStatus("PENDING");
-        rule.setCreatedAt(LocalDateTime.now());
-        rule.setUpdatedAt(LocalDateTime.now());
-        reminderRuleMapper.insert(rule);
+        for (String resolvedChannel : resolveReminderChannels(userId, channel)) {
+            ReminderRule rule = new ReminderRule();
+            rule.setUserId(userId);
+            rule.setTaskId(taskId);
+            rule.setTitle(title);
+            rule.setContent(content);
+            rule.setRemindAt(remindAt);
+            rule.setChannel(resolvedChannel);
+            rule.setStatus("PENDING");
+            rule.setCreatedAt(LocalDateTime.now());
+            rule.setUpdatedAt(LocalDateTime.now());
+            reminderRuleMapper.insert(rule);
+        }
+    }
+
+    private void dispatchImmediatelyIfDue(ReminderRule rule) {
+        if (rule.getRemindAt() == null || rule.getRemindAt().isAfter(LocalDateTime.now())) {
+            return;
+        }
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(rule.getUserId());
+            notification.setTaskId(rule.getTaskId());
+            notification.setReminderRuleId(rule.getId());
+            notification.setTitle(rule.getTitle());
+            notification.setContent(rule.getContent());
+            notification.setType("DEADLINE_SOON");
+            notification.setReadStatus("UNREAD");
+            notification.setCreatedAt(LocalDateTime.now());
+            notificationMapper.insert(notification);
+
+            channelManager.dispatch(notification);
+            rule.setStatus("SENT");
+            rule.setUpdatedAt(LocalDateTime.now());
+            reminderRuleMapper.updateById(rule);
+            log.info("Immediately dispatched due reminder generated by AI: id={}", rule.getId());
+        } catch (Exception e) {
+            rule.setStatus("FAILED");
+            rule.setUpdatedAt(LocalDateTime.now());
+            reminderRuleMapper.updateById(rule);
+            log.error("Failed to immediately dispatch due reminder generated by AI: id={}", rule.getId(), e);
+        }
     }
 
     private String normalizeReminderChannel(String channel) {
         if (channel == null || channel.isBlank()) return "IN_APP";
         String normalized = channel.trim().toUpperCase();
         return switch (normalized) {
-            case "IN_APP", "LOCAL_APP", "BROWSER", "EMAIL", "SMS" -> normalized;
+            case "IN_APP", "LOCAL_APP", "BROWSER", "EMAIL", "SMS", "QQ" -> normalized;
             default -> "IN_APP";
         };
+    }
+
+    private List<String> resolveReminderChannels(Long userId, String requestedChannel) {
+        String normalized = normalizeReminderChannel(requestedChannel);
+        if (requestedChannel != null && !requestedChannel.isBlank() && !"IN_APP".equals(normalized)) {
+            return List.of(normalized);
+        }
+
+        UserSetting setting = userSettingMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserSetting>()
+                .eq(UserSetting::getUserId, userId));
+        List<String> channels = new ArrayList<>();
+        if (setting == null || setting.getEnableInAppNotification() == null || setting.getEnableInAppNotification() == 1) {
+            channels.add("IN_APP");
+        }
+        if (setting != null
+                && setting.getEnableEmailNotification() != null
+                && setting.getEnableEmailNotification() == 1
+                && setting.getNotificationEmail() != null
+                && !setting.getNotificationEmail().isBlank()) {
+            channels.add("EMAIL");
+        }
+        if (setting != null
+                && setting.getEnableQqNotification() != null
+                && setting.getEnableQqNotification() == 1
+                && setting.getNotificationQq() != null
+                && !setting.getNotificationQq().isBlank()) {
+            channels.add("QQ");
+        }
+        return channels.isEmpty() ? List.of("IN_APP") : channels;
     }
 
     private LocalDateTime parseDateTime(String dateTimeStr) {

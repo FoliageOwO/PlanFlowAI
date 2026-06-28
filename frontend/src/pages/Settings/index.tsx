@@ -11,7 +11,7 @@ import { Separator } from '../../components/ui/separator'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-import { User, Bell, Smartphone, LogOut, Shield, Cpu, Mail, MessageSquare } from 'lucide-react'
+import { User, Bell, Smartphone, LogOut, Shield, Cpu, Mail, MessageSquare, AtSign } from 'lucide-react'
 
 type AiStatus = {
   provider: string
@@ -31,8 +31,10 @@ export default function SettingsPage() {
   const [localNotify, setLocalNotify] = React.useState(false)
   const [emailNotify, setEmailNotify] = React.useState(false)
   const [smsNotify, setSmsNotify] = React.useState(false)
+  const [qqNotify, setQqNotify] = React.useState(false)
   const [notificationEmail, setNotificationEmail] = React.useState('')
   const [notificationPhone, setNotificationPhone] = React.useState('')
+  const [notificationQq, setNotificationQq] = React.useState('')
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null)
   const [message, setMessage] = React.useState('')
 
@@ -47,8 +49,10 @@ export default function SettingsPage() {
         setLocalNotify(setting.enableLocalNotification === 1)
         setEmailNotify(setting.enableEmailNotification === 1)
         setSmsNotify(setting.enableSmsNotification === 1)
+        setQqNotify(setting.enableQqNotification === 1)
         setNotificationEmail(setting.notificationEmail || '')
         setNotificationPhone(setting.notificationPhone || '')
+        setNotificationQq(setting.notificationQq || '')
         const aiRes: any = await http.get('/settings/ai-status')
         setAiStatus(aiRes?.data || null)
       } catch {
@@ -82,23 +86,29 @@ export default function SettingsPage() {
     localNotify?: boolean
     emailNotify?: boolean
     smsNotify?: boolean
+    qqNotify?: boolean
     notificationEmail?: string
     notificationPhone?: string
+    notificationQq?: string
   }) => {
     const merged = {
       inAppNotify: next.inAppNotify ?? inAppNotify,
       localNotify: next.localNotify ?? localNotify,
       emailNotify: next.emailNotify ?? emailNotify,
       smsNotify: next.smsNotify ?? smsNotify,
+      qqNotify: next.qqNotify ?? qqNotify,
       notificationEmail: next.notificationEmail ?? notificationEmail,
       notificationPhone: next.notificationPhone ?? notificationPhone,
+      notificationQq: next.notificationQq ?? notificationQq,
     }
     setInAppNotify(merged.inAppNotify)
     setLocalNotify(merged.localNotify)
     setEmailNotify(merged.emailNotify)
     setSmsNotify(merged.smsNotify)
+    setQqNotify(merged.qqNotify)
     setNotificationEmail(merged.notificationEmail)
     setNotificationPhone(merged.notificationPhone)
+    setNotificationQq(merged.notificationQq)
     if (isMockMode()) return
 
     setSavingSettings(true)
@@ -108,8 +118,10 @@ export default function SettingsPage() {
         enableLocalNotification: merged.localNotify ? 1 : 0,
         enableEmailNotification: merged.emailNotify ? 1 : 0,
         enableSmsNotification: merged.smsNotify ? 1 : 0,
+        enableQqNotification: merged.qqNotify ? 1 : 0,
         notificationEmail: merged.notificationEmail,
         notificationPhone: merged.notificationPhone,
+        notificationQq: merged.notificationQq,
       })
       setMessage('通知设置已保存')
     } catch {
@@ -229,6 +241,27 @@ export default function SettingsPage() {
               onChange={e => setNotificationPhone(e.target.value)}
               onBlur={() => updateNotificationSettings({ notificationPhone })}
               disabled={!smsNotify || savingSettings}
+            />
+          </div>
+          <Separator />
+          <div className="py-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-zinc-50 flex items-center justify-center"><AtSign className="w-4 h-4 text-zinc-700" /></div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">QQ 通知</p>
+                  <p className="text-xs text-slate-400">接收任务提醒和截止时间提醒</p>
+                </div>
+              </div>
+              <Switch checked={qqNotify} onCheckedChange={(checked) => updateNotificationSettings({ qqNotify: checked })} disabled={savingSettings} />
+            </div>
+            <Input
+              inputMode="numeric"
+              placeholder="接收 QQ 号"
+              value={notificationQq}
+              onChange={e => setNotificationQq(e.target.value)}
+              onBlur={() => updateNotificationSettings({ notificationQq })}
+              disabled={!qqNotify || savingSettings}
             />
           </div>
         </CardContent>

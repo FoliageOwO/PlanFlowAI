@@ -43,7 +43,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'succes
   CANCELLED: { label: '已取消', variant: 'destructive', nextLabel: '重新打开' },
 }
 const nextStatus: Record<string, TaskItem['status']> = { TODO: 'DOING', DOING: 'DONE', DONE: 'DONE', CANCELLED: 'TODO' }
-const channelLabel: Record<string, string> = { IN_APP: '站内通知', LOCAL_APP: '本地通知', BROWSER: '浏览器通知', EMAIL: '邮件', SMS: '短信', WEIXIN: '微信' }
+const channelLabel: Record<string, string> = { IN_APP: '站内通知', LOCAL_APP: '本地通知', BROWSER: '浏览器通知', EMAIL: '邮件', SMS: '短信', QQ: 'QQ' }
 const sourceIcons: Record<string, React.ReactNode> = { TEXT: <FileText className="w-4 h-4" />, IMAGE: <Image className="w-4 h-4" />, FILE: <File className="w-4 h-4" />, AUDIO: <File className="w-4 h-4" /> }
 
 function formatEstimatedDuration(task: TaskItem): string {
@@ -571,6 +571,7 @@ export default function TaskDetail() {
                     <SelectItem value="BROWSER">浏览器通知</SelectItem>
                     <SelectItem value="EMAIL">邮件</SelectItem>
                     <SelectItem value="SMS">短信</SelectItem>
+                    <SelectItem value="QQ">QQ</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

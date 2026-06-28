@@ -2,10 +2,12 @@ package com.planflow.notification;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planflow.entity.Notification;
+import com.planflow.entity.ReminderRule;
+import com.planflow.entity.User;
 import com.planflow.entity.UserSetting;
+import com.planflow.repository.ReminderRuleMapper;
 import com.planflow.repository.UserSettingMapper;
 import com.planflow.repository.UserMapper;
-import com.planflow.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ public class WebSocketNotificationChannel implements NotificationChannel {
     private final NotificationWebSocketHandler wsHandler;
     private final UserMapper userMapper;
     private final UserSettingMapper userSettingMapper;
+    private final ReminderRuleMapper reminderRuleMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -42,6 +45,7 @@ public class WebSocketNotificationChannel implements NotificationChannel {
     @Override
     public void send(Notification notification) {
         try {
+            if (!shouldPush(notification)) return;
             User user = userMapper.selectById(notification.getUserId());
             if (user == null) return;
 
@@ -60,5 +64,12 @@ public class WebSocketNotificationChannel implements NotificationChannel {
         } catch (Exception e) {
             log.warn("WS push failed", e);
         }
+    }
+
+    private boolean shouldPush(Notification notification) {
+        if (notification.getReminderRuleId() == null) return true;
+        ReminderRule rule = reminderRuleMapper.selectById(notification.getReminderRuleId());
+        if (rule == null || rule.getChannel() == null) return true;
+        return "IN_APP".equalsIgnoreCase(rule.getChannel()) || "BROWSER".equalsIgnoreCase(rule.getChannel());
     }
 }

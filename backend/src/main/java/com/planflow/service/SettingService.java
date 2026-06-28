@@ -33,6 +33,7 @@ public class SettingService {
             setting.setEnableBrowserNotification(0);
             setting.setEnableEmailNotification(0);
             setting.setEnableSmsNotification(0);
+            setting.setEnableQqNotification(0);
             setting.setCreatedAt(LocalDateTime.now());
             setting.setUpdatedAt(LocalDateTime.now());
             userSettingMapper.insert(setting);
@@ -51,8 +52,10 @@ public class SettingService {
         if (updates.getEnableBrowserNotification() != null) setting.setEnableBrowserNotification(updates.getEnableBrowserNotification());
         if (updates.getEnableEmailNotification() != null) setting.setEnableEmailNotification(updates.getEnableEmailNotification());
         if (updates.getEnableSmsNotification() != null) setting.setEnableSmsNotification(updates.getEnableSmsNotification());
+        if (updates.getEnableQqNotification() != null) setting.setEnableQqNotification(updates.getEnableQqNotification());
         if (updates.getNotificationEmail() != null) setting.setNotificationEmail(updates.getNotificationEmail().isBlank() ? null : updates.getNotificationEmail().trim());
         if (updates.getNotificationPhone() != null) setting.setNotificationPhone(updates.getNotificationPhone().isBlank() ? null : updates.getNotificationPhone().trim());
+        if (updates.getNotificationQq() != null) setting.setNotificationQq(updates.getNotificationQq().isBlank() ? null : updates.getNotificationQq().trim());
 
         setting.setUpdatedAt(LocalDateTime.now());
         userSettingMapper.updateById(setting);

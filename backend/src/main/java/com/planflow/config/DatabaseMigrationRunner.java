@@ -73,10 +73,14 @@ public class DatabaseMigrationRunner implements CommandLineRunner {
                 "ALTER TABLE user_setting ADD COLUMN enable_email_notification TINYINT NOT NULL DEFAULT 0 COMMENT '启用邮件通知' AFTER enable_browser_notification");
         addColumnIfMissing("user_setting", "enable_sms_notification",
                 "ALTER TABLE user_setting ADD COLUMN enable_sms_notification TINYINT NOT NULL DEFAULT 0 COMMENT '启用短信通知' AFTER enable_email_notification");
+        addColumnIfMissing("user_setting", "enable_qq_notification",
+                "ALTER TABLE user_setting ADD COLUMN enable_qq_notification TINYINT NOT NULL DEFAULT 0 COMMENT '启用QQ通知' AFTER enable_sms_notification");
         addColumnIfMissing("user_setting", "notification_email",
-                "ALTER TABLE user_setting ADD COLUMN notification_email VARCHAR(255) DEFAULT NULL COMMENT '通知接收邮箱' AFTER enable_sms_notification");
+                "ALTER TABLE user_setting ADD COLUMN notification_email VARCHAR(255) DEFAULT NULL COMMENT '通知接收邮箱' AFTER enable_qq_notification");
         addColumnIfMissing("user_setting", "notification_phone",
                 "ALTER TABLE user_setting ADD COLUMN notification_phone VARCHAR(50) DEFAULT NULL COMMENT '通知接收手机号' AFTER notification_email");
+        addColumnIfMissing("user_setting", "notification_qq",
+                "ALTER TABLE user_setting ADD COLUMN notification_qq VARCHAR(50) DEFAULT NULL COMMENT '通知接收QQ号' AFTER notification_phone");
     }
 
     private void addColumnIfMissing(String tableName, String columnName, String sql) {
