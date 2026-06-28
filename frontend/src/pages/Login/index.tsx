@@ -4,16 +4,10 @@ import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
-import { Badge } from '../../components/ui/badge'
 import { Card, CardContent } from '../../components/ui/card'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-import { ClipboardCheck, User, Lock, ShieldCheck } from 'lucide-react'
-
-const demoAccounts = [
-  { label: '管理员', username: 'admin', password: '123456' },
-  { label: '测试用户', username: 'test', password: '123456' },
-]
+import { ClipboardCheck, User, Lock } from 'lucide-react'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -50,11 +44,6 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const fillDemo = (u: string, p: string) => {
-    setUsername(u)
-    setPassword(p)
   }
 
   return (
@@ -108,26 +97,6 @@ export default function Login() {
               登录
             </Button>
           </form>
-
-          {/* Demo accounts */}
-          <div className="mt-5 pt-4 border-t border-zinc-100">
-            <div className="flex items-center gap-1.5 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-zinc-500" />
-              <span className="text-xs text-zinc-400">演示账号（点击填充）</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {demoAccounts.map(acc => (
-                <Badge
-                  key={acc.username}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-zinc-100 hover:border-zinc-300 transition-colors text-xs"
-                  onClick={() => fillDemo(acc.username, acc.password)}
-                >
-                  {acc.label}: {acc.username}
-                </Badge>
-              ))}
-            </div>
-          </div>
 
           <div className="mt-5 text-center text-sm text-zinc-500">
             没有账号？
