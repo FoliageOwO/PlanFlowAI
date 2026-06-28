@@ -81,6 +81,10 @@ public class SourceInputService {
     }
 
     public CreateInputResult createFileUpload(MultipartFile file, String sourceType) {
+        return createFileUpload(file, sourceType, null);
+    }
+
+    public CreateInputResult createFileUpload(MultipartFile file, String sourceType, String content) {
         Long userId = securityUtils.getCurrentUserId();
         String originalFilename = file.getOriginalFilename();
 
@@ -95,6 +99,9 @@ public class SourceInputService {
         input.setOriginalName(originalFilename);
         input.setFileSize(file.getSize());
         input.setMimeType(file.getContentType());
+        if (content != null && !content.isBlank()) {
+            input.setOriginalText(content.trim());
+        }
         input.setStatus("CREATED");
         input.setCreatedAt(LocalDateTime.now());
         input.setUpdatedAt(LocalDateTime.now());

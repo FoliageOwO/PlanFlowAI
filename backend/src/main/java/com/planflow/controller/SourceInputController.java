@@ -54,7 +54,8 @@ public class SourceInputController {
 
     @PostMapping("/api/inputs/upload")
     public ApiResponse uploadFile(@RequestParam("file") MultipartFile file,
-                                   @RequestParam("sourceType") String sourceType) {
+                                   @RequestParam("sourceType") String sourceType,
+                                   @RequestParam(required = false) String content) {
         if (file.isEmpty()) {
             return ApiResponse.error(ErrorCode.BAD_REQUEST, "file is empty");
         }
@@ -62,7 +63,7 @@ public class SourceInputController {
             return ApiResponse.error(ErrorCode.BAD_REQUEST, "sourceType is required");
         }
         try {
-            CreateInputResult result = sourceInputService.createFileUpload(file, sourceType.toUpperCase());
+            CreateInputResult result = sourceInputService.createFileUpload(file, sourceType.toUpperCase(), content);
             Map<String, Object> uploadResult = new HashMap<>();
             uploadResult.put("inputId", result.getInputId());
             uploadResult.put("jobId", result.getJobId());
@@ -168,7 +169,8 @@ public class SourceInputController {
 
     @PostMapping("/jobs/upload")
     public ApiResponse uploadFileJob(@RequestParam("file") MultipartFile file,
-                                      @RequestParam(value = "sourceType", required = false) String sourceType) {
+                                      @RequestParam(value = "sourceType", required = false) String sourceType,
+                                      @RequestParam(required = false) String content) {
         if (sourceType == null || sourceType.isBlank()) {
             // Frontend may not send sourceType; infer from file extension
             String filename = file.getOriginalFilename();
@@ -183,6 +185,6 @@ public class SourceInputController {
                 return ApiResponse.error(ErrorCode.BAD_REQUEST, "sourceType is required");
             }
         }
-        return uploadFile(file, sourceType);
+        return uploadFile(file, sourceType, content);
     }
 }

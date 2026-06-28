@@ -461,12 +461,12 @@ export default function TaskDetail() {
               {task.reminders.length > 0 ? (
                 <div className="space-y-2">
                   {task.reminders.map(r => (
-                    <div key={r.id} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-orange-50">
-                      <Bell className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                    <div key={r.id} className="flex items-start gap-2 text-sm p-2.5 rounded-md bg-orange-50/70 border border-orange-100">
+                      <Bell className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{r.title || '任务提醒'}</p>
-                        <p className="text-xs text-slate-500">{dayjs(r.time).format('MM-DD HH:mm')}</p>
-                        <div className="flex items-center gap-1 mt-1">
+                        <p className="text-xs font-medium text-zinc-900 truncate">{r.title || '任务提醒'}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-mono text-zinc-500">{dayjs(r.time).format('MM-DD HH:mm')}</span>
                           <Badge variant="secondary" className="text-[10px] px-1 h-auto">{channelLabel[r.channel] || r.channel}</Badge>
                           {r.status && <Badge variant={r.status === 'PENDING' ? 'warning' : 'secondary'} className="text-[10px] px-1 h-auto">{r.status}</Badge>}
                         </div>

@@ -238,7 +238,6 @@ export default function JobProgressPage() {
         <Card className="mt-4 bg-zinc-50/70">
           <CardContent className="p-4 flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-zinc-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-zinc-600">解析完成后，系统会自动生成任务、检查清单和提醒规则</p>
           </CardContent>
         </Card>
       )}

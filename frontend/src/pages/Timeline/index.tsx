@@ -13,7 +13,7 @@ import EmptyState from '../../components/common/EmptyState'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
 import type { TimelineEvent } from '../../services/mockData'
-import { ChevronLeft, ChevronRight, Clock, Calendar, ListCollapse, MapPin, ExternalLink } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, Calendar, ListCollapse, MapPin, ExternalLink, Trash2 } from 'lucide-react'
 
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
@@ -43,6 +43,11 @@ function formatSourceEvidence(value?: string): string {
   } catch {
     return value
   }
+}
+
+function getEventLabel(evt: TimelineEvent): string {
+  if (evt.relatedTaskId) return '任务'
+  return (typeConfig[evt.type] || typeConfig.EVENT).label
 }
 
 export default function TimelinePage() {
@@ -103,12 +108,20 @@ export default function TimelinePage() {
   const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
   const openEventDetail = async (evt: TimelineEvent) => {
+    if (evt.relatedTaskId) {
+      navigate(`/tasks/${evt.relatedTaskId}`)
+      return
+    }
     setSelectedEvent(evt)
     if (isMockMode()) return
     try {
       const res: any = await http.get(`/timeline/${evt.id}`)
       const raw = res?.data
       if (!raw) return
+      if (raw.taskId) {
+        navigate(`/tasks/${raw.taskId}`)
+        return
+      }
       setSelectedEvent({
         id: String(raw.id || evt.id),
         type: raw.eventType || raw.type || evt.type,
@@ -124,6 +137,16 @@ export default function TimelinePage() {
     } catch {
       // Keep list item details if the detail endpoint is unavailable.
     }
+  }
+
+  const deleteSelectedEvent = async () => {
+    if (!selectedEvent) return
+    if (!window.confirm('确定删除这个日程事件吗？')) return
+    if (!isMockMode()) {
+      await http.delete(`/timeline/${selectedEvent.id}`)
+    }
+    setEvents(prev => prev.filter(evt => evt.id !== selectedEvent.id))
+    setSelectedEvent(null)
   }
 
   // Timeline grouping (must be before early return to keep hook order consistent)
@@ -186,7 +209,7 @@ export default function TimelinePage() {
                               <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                               <span className="font-medium text-sm text-slate-900">{evt.title}</span>
                               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-auto ${cfg.bg} border-0`}>
-                                {cfg.label}
+                                {getEventLabel(evt)}
                               </Badge>
                             </div>
                             <span className="text-xs text-slate-500">
@@ -313,7 +336,7 @@ export default function TimelinePage() {
                         {evt.description && (
                           <span className="text-[11px] text-slate-400 truncate max-w-[120px] hidden sm:block">{evt.description}</span>
                         )}
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full text-slate-500 bg-slate-100 flex-shrink-0">{cfg.label}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full text-slate-500 bg-slate-100 flex-shrink-0">{getEventLabel(evt)}</span>
                       </div>
                     )
                   })}
@@ -332,7 +355,7 @@ export default function TimelinePage() {
           {selectedEvent && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{(typeConfig[selectedEvent.type] || typeConfig.EVENT).label}</Badge>
+                <Badge variant="outline">{getEventLabel(selectedEvent)}</Badge>
                 {selectedEvent.relatedTaskId && <Badge variant="default">关联任务</Badge>}
               </div>
 
@@ -368,6 +391,12 @@ export default function TimelinePage() {
               {selectedEvent.relatedTaskId && (
                 <Button onClick={() => navigate(`/tasks/${selectedEvent.relatedTaskId}`)} className="w-full">
                   <ExternalLink className="w-4 h-4 mr-1.5" /> 查看任务详情
+                </Button>
+              )}
+
+              {!selectedEvent.relatedTaskId && (
+                <Button variant="outline" onClick={deleteSelectedEvent} className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-1.5" /> 删除这个日程
                 </Button>
               )}
             </div>

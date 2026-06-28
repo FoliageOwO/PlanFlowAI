@@ -102,9 +102,17 @@ public class TaskService {
         reminderRuleMapper.delete(new LambdaQueryWrapper<ReminderRule>()
                 .eq(ReminderRule::getUserId, userId)
                 .eq(ReminderRule::getTaskId, id));
-        timelineEventMapper.delete(new LambdaQueryWrapper<TimelineEvent>()
-                .eq(TimelineEvent::getUserId, userId)
-                .eq(TimelineEvent::getTaskId, id));
+        LambdaQueryWrapper<TimelineEvent> eventDeleteWrapper = new LambdaQueryWrapper<TimelineEvent>()
+                .eq(TimelineEvent::getUserId, userId);
+        if (task.getSourceInputId() != null && task.getDeadline() != null) {
+            eventDeleteWrapper.and(w -> w.eq(TimelineEvent::getTaskId, id)
+                    .or(n -> n.isNull(TimelineEvent::getTaskId)
+                            .eq(TimelineEvent::getSourceInputId, task.getSourceInputId())
+                            .eq(TimelineEvent::getStartTime, task.getDeadline())));
+        } else {
+            eventDeleteWrapper.eq(TimelineEvent::getTaskId, id);
+        }
+        timelineEventMapper.delete(eventDeleteWrapper);
         checklistItemMapper.delete(new LambdaQueryWrapper<TaskChecklistItem>()
                 .eq(TaskChecklistItem::getUserId, userId)
                 .eq(TaskChecklistItem::getTaskId, id));

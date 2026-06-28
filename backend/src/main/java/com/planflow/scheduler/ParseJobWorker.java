@@ -115,7 +115,7 @@ public class ParseJobWorker {
         }
         String sourceType = sourceInput.getSourceType().toUpperCase();
 
-        return switch (sourceType) {
+        String extractedText = switch (sourceType) {
             case "TEXT" -> sourceInput.getOriginalText();
             case "IMAGE" -> {
                 File imageFile = new File(sourceInput.getFilePath());
@@ -138,5 +138,10 @@ public class ParseJobWorker {
             }
             default -> throw new RuntimeException("不支持的文件类型: " + sourceType);
         };
+        String supplement = sourceInput.getOriginalText();
+        if (!"TEXT".equals(sourceType) && supplement != null && !supplement.isBlank()) {
+            return "用户补充说明：\n" + supplement.trim() + "\n\n文件提取文本：\n" + extractedText;
+        }
+        return extractedText;
     }
 }

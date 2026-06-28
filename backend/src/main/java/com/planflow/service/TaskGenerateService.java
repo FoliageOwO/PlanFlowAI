@@ -37,6 +37,7 @@ public class TaskGenerateService {
         int taskCount = 0;
         int eventCount = 0;
         int reminderCount = 0;
+        List<Task> generatedTasks = new ArrayList<>();
 
         // Generate tasks
         if (result.getTasks() != null) {
@@ -67,6 +68,7 @@ public class TaskGenerateService {
                 }
 
                 taskMapper.insert(task);
+                generatedTasks.add(task);
                 taskCount++;
 
                 // Generate checklist items
@@ -138,6 +140,10 @@ public class TaskGenerateService {
                 event.setTitle(eventItem.getTitle() == null || eventItem.getTitle().isBlank()
                         ? "未命名日程" : eventItem.getTitle());
                 event.setEventType("EVENT");
+                Task relatedTask = resolveRelatedTask(eventItem, startTime, generatedTasks);
+                if (relatedTask != null) {
+                    event.setTaskId(relatedTask.getId());
+                }
                 event.setStartTime(startTime);
                 event.setEndTime(parseDateTime(eventItem.getEndTime()));
                 event.setLocation(eventItem.getLocation());
@@ -157,6 +163,25 @@ public class TaskGenerateService {
         }
 
         log.info("Generated {} tasks, {} events, {} reminders", taskCount, eventCount, reminderCount);
+    }
+
+    private Task resolveRelatedTask(AiAnalysisResultDTO.EventItem eventItem, LocalDateTime startTime, List<Task> generatedTasks) {
+        if (generatedTasks == null || generatedTasks.isEmpty()) return null;
+        for (Task task : generatedTasks) {
+            if (task.getDeadline() != null && task.getDeadline().isEqual(startTime)) {
+                return task;
+            }
+        }
+        if (generatedTasks.size() == 1) return generatedTasks.get(0);
+        String eventTitle = normalizeForComparison(eventItem.getTitle());
+        for (Task task : generatedTasks) {
+            String taskTitle = normalizeForComparison(task.getTitle());
+            if (!eventTitle.isBlank() && !taskTitle.isBlank()
+                    && (eventTitle.contains(taskTitle) || taskTitle.contains(eventTitle))) {
+                return task;
+            }
+        }
+        return null;
     }
 
     private void createDefaultReminder(Long userId, Long taskId, LocalDateTime remindAt,

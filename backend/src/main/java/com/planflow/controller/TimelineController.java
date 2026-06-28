@@ -38,4 +38,14 @@ public class TimelineController {
             return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
         }
     }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse deleteTimelineEvent(@PathVariable Long id) {
+        try {
+            timelineService.deleteEvent(id);
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            return ApiResponse.error(ErrorCode.NOT_FOUND, e.getMessage());
+        }
+    }
 }
