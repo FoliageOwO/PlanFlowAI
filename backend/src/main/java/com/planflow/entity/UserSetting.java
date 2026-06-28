@@ -14,6 +14,10 @@ public class UserSetting {
     private Integer enableInAppNotification;
     private Integer enableLocalNotification;
     private Integer enableBrowserNotification;
+    private Integer enableEmailNotification;
+    private Integer enableSmsNotification;
+    private String notificationEmail;
+    private String notificationPhone;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

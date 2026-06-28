@@ -14,6 +14,7 @@ import com.planflow.repository.ParseJobMapper;
 import com.planflow.repository.SourceInputMapper;
 import com.planflow.repository.TaskMapper;
 import com.planflow.repository.UserMapper;
+import com.planflow.service.AiConfigService;
 import com.planflow.service.SettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,6 +41,7 @@ public class AdminController {
     private final PlanFlowProperties planFlowProperties;
     private final JdbcTemplate jdbcTemplate;
     private final SettingService settingService;
+    private final AiConfigService aiConfigService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     private void checkAdmin() {
@@ -142,6 +144,37 @@ public class AdminController {
         return ApiResponse.success(toggleResult);
     }
 
+    @GetMapping("/notification-config")
+    public ApiResponse getNotificationConfig() {
+        checkAdmin();
+        return ApiResponse.success(loadNotificationConfig());
+    }
+
+    @PatchMapping("/notification-config")
+    public ApiResponse updateNotificationConfig(@RequestBody Map<String, Object> updates) {
+        checkAdmin();
+        Map<String, Object> current = loadNotificationConfig();
+        for (String key : current.keySet()) {
+            if (updates.containsKey(key)) {
+                upsertSystemConfig(notificationConfigStorageKey(key), valueToString(updates.get(key)), notificationConfigDescription(key));
+            }
+        }
+        return ApiResponse.success(loadNotificationConfig());
+    }
+
+    @GetMapping("/ai-config")
+    public ApiResponse getAiConfig() {
+        checkAdmin();
+        return ApiResponse.success(aiConfigService.getConfig());
+    }
+
+    @PatchMapping("/ai-config")
+    public ApiResponse updateAiConfig(@RequestBody Map<String, Object> updates) {
+        checkAdmin();
+        aiConfigService.updateConfig(updates);
+        return ApiResponse.success(aiConfigService.getConfig());
+    }
+
     private Map<String, Object> toAdminUserItem(User user) {
         Map<String, Object> item = new HashMap<>();
         item.put("id", String.valueOf(user.getId()));
@@ -156,6 +189,90 @@ public class AdminController {
 
     private String toUserStatus(Integer status) {
         return status != null && status == 1 ? "ACTIVE" : "DISABLED";
+    }
+
+    private Map<String, Object> loadNotificationConfig() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("smtpEnabled", getSystemConfig("notification.smtp.enabled", "false"));
+        config.put("smtpHost", getSystemConfig("notification.smtp.host", ""));
+        config.put("smtpPort", getSystemConfig("notification.smtp.port", "465"));
+        config.put("smtpSecurity", getSystemConfig("notification.smtp.security", "SSL"));
+        config.put("smtpUsername", getSystemConfig("notification.smtp.username", ""));
+        config.put("smtpPassword", getSystemConfig("notification.smtp.password", ""));
+        config.put("smtpFrom", getSystemConfig("notification.smtp.from", ""));
+        config.put("smsEnabled", getSystemConfig("notification.sms.enabled", "false"));
+        config.put("smsProvider", getSystemConfig("notification.sms.provider", "aliyun"));
+        config.put("smsAccessKeyId", getSystemConfig("notification.sms.access-key-id", ""));
+        config.put("smsAccessKeySecret", getSystemConfig("notification.sms.access-key-secret", ""));
+        config.put("smsSignName", getSystemConfig("notification.sms.sign-name", ""));
+        config.put("smsTemplateCode", getSystemConfig("notification.sms.template-code", ""));
+        return config;
+    }
+
+    private String getSystemConfig(String key, String defaultValue) {
+        List<String> values = jdbcTemplate.query(
+                "SELECT config_value FROM system_config WHERE config_key = ?",
+                (rs, rowNum) -> rs.getString("config_value"),
+                key);
+        return values.isEmpty() ? defaultValue : values.get(0);
+    }
+
+    private void upsertSystemConfig(String key, String value, String description) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM system_config WHERE config_key = ?",
+                Integer.class,
+                key);
+        if (count != null && count > 0) {
+            jdbcTemplate.update(
+                    "UPDATE system_config SET config_value = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE config_key = ?",
+                    value, description, key);
+        } else {
+            jdbcTemplate.update(
+                    "INSERT INTO system_config (config_key, config_value, description) VALUES (?, ?, ?)",
+                    key, value, description);
+        }
+    }
+
+    private String valueToString(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private String notificationConfigDescription(String key) {
+        return switch (key) {
+            case "smtpEnabled" -> "是否启用邮件通知通道";
+            case "smtpHost" -> "SMTP 服务器地址";
+            case "smtpPort" -> "SMTP 服务器端口";
+            case "smtpSecurity" -> "SMTP 加密方式";
+            case "smtpUsername" -> "SMTP 用户名";
+            case "smtpPassword" -> "SMTP 密码";
+            case "smtpFrom" -> "发件邮箱";
+            case "smsEnabled" -> "是否启用短信通知通道";
+            case "smsProvider" -> "短信服务商";
+            case "smsAccessKeyId" -> "短信 AccessKey ID";
+            case "smsAccessKeySecret" -> "短信 AccessKey Secret";
+            case "smsSignName" -> "短信签名";
+            case "smsTemplateCode" -> "短信模板 Code";
+            default -> "通知通道配置";
+        };
+    }
+
+    private String notificationConfigStorageKey(String key) {
+        return switch (key) {
+            case "smtpEnabled" -> "notification.smtp.enabled";
+            case "smtpHost" -> "notification.smtp.host";
+            case "smtpPort" -> "notification.smtp.port";
+            case "smtpSecurity" -> "notification.smtp.security";
+            case "smtpUsername" -> "notification.smtp.username";
+            case "smtpPassword" -> "notification.smtp.password";
+            case "smtpFrom" -> "notification.smtp.from";
+            case "smsEnabled" -> "notification.sms.enabled";
+            case "smsProvider" -> "notification.sms.provider";
+            case "smsAccessKeyId" -> "notification.sms.access-key-id";
+            case "smsAccessKeySecret" -> "notification.sms.access-key-secret";
+            case "smsSignName" -> "notification.sms.sign-name";
+            case "smsTemplateCode" -> "notification.sms.template-code";
+            default -> key;
+        };
     }
 
     private boolean isDatabaseHealthy() {

@@ -2,7 +2,6 @@ package com.planflow.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.planflow.common.SecurityUtils;
-import com.planflow.config.PlanFlowProperties;
 import com.planflow.entity.UserSetting;
 import com.planflow.repository.UserSettingMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,7 @@ public class SettingService {
 
     private final UserSettingMapper userSettingMapper;
     private final SecurityUtils securityUtils;
-    private final PlanFlowProperties planFlowProperties;
+    private final AiConfigService aiConfigService;
 
     public UserSetting getUserSetting() {
         Long userId = securityUtils.getCurrentUserId();
@@ -32,6 +31,8 @@ public class SettingService {
             setting.setEnableInAppNotification(1);
             setting.setEnableLocalNotification(0);
             setting.setEnableBrowserNotification(0);
+            setting.setEnableEmailNotification(0);
+            setting.setEnableSmsNotification(0);
             setting.setCreatedAt(LocalDateTime.now());
             setting.setUpdatedAt(LocalDateTime.now());
             userSettingMapper.insert(setting);
@@ -48,6 +49,10 @@ public class SettingService {
         if (updates.getEnableInAppNotification() != null) setting.setEnableInAppNotification(updates.getEnableInAppNotification());
         if (updates.getEnableLocalNotification() != null) setting.setEnableLocalNotification(updates.getEnableLocalNotification());
         if (updates.getEnableBrowserNotification() != null) setting.setEnableBrowserNotification(updates.getEnableBrowserNotification());
+        if (updates.getEnableEmailNotification() != null) setting.setEnableEmailNotification(updates.getEnableEmailNotification());
+        if (updates.getEnableSmsNotification() != null) setting.setEnableSmsNotification(updates.getEnableSmsNotification());
+        if (updates.getNotificationEmail() != null) setting.setNotificationEmail(updates.getNotificationEmail().isBlank() ? null : updates.getNotificationEmail().trim());
+        if (updates.getNotificationPhone() != null) setting.setNotificationPhone(updates.getNotificationPhone().isBlank() ? null : updates.getNotificationPhone().trim());
 
         setting.setUpdatedAt(LocalDateTime.now());
         userSettingMapper.updateById(setting);
@@ -56,27 +61,27 @@ public class SettingService {
     }
 
     public Map<String, Object> getAiStatus() {
-        PlanFlowProperties.Ai ai = planFlowProperties.getAi();
-        String provider = ai.getProvider() == null || ai.getProvider().isBlank() ? "deepseek" : ai.getProvider();
+        Map<String, String> ai = aiConfigService.getConfig();
+        String provider = ai.get("provider") == null || ai.get("provider").isBlank() ? "deepseek" : ai.get("provider");
         String baseUrl;
         String model;
         String apiKey;
 
         switch (provider) {
             case "qwen" -> {
-                baseUrl = ai.getQwenBaseUrl();
-                model = ai.getQwenModel();
-                apiKey = ai.getQwenApiKey();
+                baseUrl = ai.get("qwenBaseUrl");
+                model = ai.get("qwenModel");
+                apiKey = ai.get("qwenApiKey");
             }
             case "openai-compatible" -> {
-                baseUrl = ai.getOpenaiCompatibleBaseUrl();
-                model = ai.getOpenaiCompatibleModel();
-                apiKey = ai.getOpenaiCompatibleApiKey();
+                baseUrl = ai.get("openaiCompatibleBaseUrl");
+                model = ai.get("openaiCompatibleModel");
+                apiKey = ai.get("openaiCompatibleApiKey");
             }
             case "deepseek" -> {
-                baseUrl = ai.getDeepseekBaseUrl();
-                model = ai.getDeepseekModel();
-                apiKey = ai.getDeepseekApiKey();
+                baseUrl = ai.get("deepseekBaseUrl");
+                model = ai.get("deepseekModel");
+                apiKey = ai.get("deepseekApiKey");
             }
             default -> {
                 baseUrl = "";

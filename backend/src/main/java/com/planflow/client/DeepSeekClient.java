@@ -1,30 +1,28 @@
 package com.planflow.client;
 
-import com.planflow.config.PlanFlowProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import com.planflow.service.AiConfigService;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(prefix = "planflow.ai", name = "provider", havingValue = "deepseek", matchIfMissing = true)
 public class DeepSeekClient extends OpenAiCompatibleChatClient {
 
-    private final PlanFlowProperties planFlowProperties;
+    private final AiConfigService aiConfigService;
 
-    public DeepSeekClient(PlanFlowProperties planFlowProperties,
+    public DeepSeekClient(AiConfigService aiConfigService,
                           AiPromptBuilder aiPromptBuilder,
                           AiResultParser aiResultParser) {
         super(aiPromptBuilder, aiResultParser);
-        this.planFlowProperties = planFlowProperties;
+        this.aiConfigService = aiConfigService;
     }
 
     @Override
     protected String baseUrl() {
-        return planFlowProperties.getAi().getDeepseekBaseUrl();
+        return aiConfigService.value("deepseekBaseUrl");
     }
 
     @Override
     protected String apiKey() {
-        return planFlowProperties.getAi().getDeepseekApiKey();
+        return aiConfigService.value("deepseekApiKey");
     }
 
     @Override
@@ -34,6 +32,6 @@ public class DeepSeekClient extends OpenAiCompatibleChatClient {
 
     @Override
     public String modelName() {
-        return planFlowProperties.getAi().getDeepseekModel();
+        return aiConfigService.value("deepseekModel");
     }
 }

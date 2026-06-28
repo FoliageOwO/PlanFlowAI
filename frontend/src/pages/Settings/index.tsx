@@ -11,7 +11,7 @@ import { Separator } from '../../components/ui/separator'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
-import { User, Bell, Smartphone, LogOut, Shield, Cpu } from 'lucide-react'
+import { User, Bell, Smartphone, LogOut, Shield, Cpu, Mail, MessageSquare } from 'lucide-react'
 
 type AiStatus = {
   provider: string
@@ -29,6 +29,10 @@ export default function SettingsPage() {
   const [savingSettings, setSavingSettings] = React.useState(false)
   const [inAppNotify, setInAppNotify] = React.useState(true)
   const [localNotify, setLocalNotify] = React.useState(false)
+  const [emailNotify, setEmailNotify] = React.useState(false)
+  const [smsNotify, setSmsNotify] = React.useState(false)
+  const [notificationEmail, setNotificationEmail] = React.useState('')
+  const [notificationPhone, setNotificationPhone] = React.useState('')
   const [aiStatus, setAiStatus] = React.useState<AiStatus | null>(null)
   const [message, setMessage] = React.useState('')
 
@@ -41,6 +45,10 @@ export default function SettingsPage() {
         if (!setting) return
         setInAppNotify(setting.enableInAppNotification !== 0)
         setLocalNotify(setting.enableLocalNotification === 1)
+        setEmailNotify(setting.enableEmailNotification === 1)
+        setSmsNotify(setting.enableSmsNotification === 1)
+        setNotificationEmail(setting.notificationEmail || '')
+        setNotificationPhone(setting.notificationPhone || '')
         const aiRes: any = await http.get('/settings/ai-status')
         setAiStatus(aiRes?.data || null)
       } catch {
@@ -69,13 +77,28 @@ export default function SettingsPage() {
     navigate('/login')
   }
 
-  const updateNotificationSettings = async (next: { inAppNotify?: boolean; localNotify?: boolean }) => {
+  const updateNotificationSettings = async (next: {
+    inAppNotify?: boolean
+    localNotify?: boolean
+    emailNotify?: boolean
+    smsNotify?: boolean
+    notificationEmail?: string
+    notificationPhone?: string
+  }) => {
     const merged = {
       inAppNotify: next.inAppNotify ?? inAppNotify,
       localNotify: next.localNotify ?? localNotify,
+      emailNotify: next.emailNotify ?? emailNotify,
+      smsNotify: next.smsNotify ?? smsNotify,
+      notificationEmail: next.notificationEmail ?? notificationEmail,
+      notificationPhone: next.notificationPhone ?? notificationPhone,
     }
     setInAppNotify(merged.inAppNotify)
     setLocalNotify(merged.localNotify)
+    setEmailNotify(merged.emailNotify)
+    setSmsNotify(merged.smsNotify)
+    setNotificationEmail(merged.notificationEmail)
+    setNotificationPhone(merged.notificationPhone)
     if (isMockMode()) return
 
     setSavingSettings(true)
@@ -83,6 +106,10 @@ export default function SettingsPage() {
       await http.patch('/settings', {
         enableInAppNotification: merged.inAppNotify ? 1 : 0,
         enableLocalNotification: merged.localNotify ? 1 : 0,
+        enableEmailNotification: merged.emailNotify ? 1 : 0,
+        enableSmsNotification: merged.smsNotify ? 1 : 0,
+        notificationEmail: merged.notificationEmail,
+        notificationPhone: merged.notificationPhone,
       })
       setMessage('通知设置已保存')
     } catch {
@@ -161,6 +188,48 @@ export default function SettingsPage() {
               </div>
             </div>
             <Switch checked={localNotify} onCheckedChange={(checked) => updateNotificationSettings({ localNotify: checked })} disabled={savingSettings} />
+          </div>
+          <Separator />
+          <div className="py-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-zinc-50 flex items-center justify-center"><Mail className="w-4 h-4 text-zinc-700" /></div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">邮件通知</p>
+                  <p className="text-xs text-slate-400">接收任务提醒和截止时间提醒</p>
+                </div>
+              </div>
+              <Switch checked={emailNotify} onCheckedChange={(checked) => updateNotificationSettings({ emailNotify: checked })} disabled={savingSettings} />
+            </div>
+            <Input
+              type="email"
+              placeholder="接收邮箱"
+              value={notificationEmail}
+              onChange={e => setNotificationEmail(e.target.value)}
+              onBlur={() => updateNotificationSettings({ notificationEmail })}
+              disabled={!emailNotify || savingSettings}
+            />
+          </div>
+          <Separator />
+          <div className="py-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-zinc-50 flex items-center justify-center"><MessageSquare className="w-4 h-4 text-zinc-700" /></div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">短信通知</p>
+                  <p className="text-xs text-slate-400">接收重要任务和截止时间提醒</p>
+                </div>
+              </div>
+              <Switch checked={smsNotify} onCheckedChange={(checked) => updateNotificationSettings({ smsNotify: checked })} disabled={savingSettings} />
+            </div>
+            <Input
+              type="tel"
+              placeholder="接收手机号"
+              value={notificationPhone}
+              onChange={e => setNotificationPhone(e.target.value)}
+              onBlur={() => updateNotificationSettings({ notificationPhone })}
+              disabled={!smsNotify || savingSettings}
+            />
           </div>
         </CardContent>
       </Card>

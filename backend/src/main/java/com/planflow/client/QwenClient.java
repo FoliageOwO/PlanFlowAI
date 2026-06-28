@@ -1,30 +1,28 @@
 package com.planflow.client;
 
-import com.planflow.config.PlanFlowProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import com.planflow.service.AiConfigService;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(prefix = "planflow.ai", name = "provider", havingValue = "qwen")
 public class QwenClient extends OpenAiCompatibleChatClient {
 
-    private final PlanFlowProperties planFlowProperties;
+    private final AiConfigService aiConfigService;
 
-    public QwenClient(PlanFlowProperties planFlowProperties,
+    public QwenClient(AiConfigService aiConfigService,
                       AiPromptBuilder aiPromptBuilder,
                       AiResultParser aiResultParser) {
         super(aiPromptBuilder, aiResultParser);
-        this.planFlowProperties = planFlowProperties;
+        this.aiConfigService = aiConfigService;
     }
 
     @Override
     protected String baseUrl() {
-        return planFlowProperties.getAi().getQwenBaseUrl();
+        return aiConfigService.value("qwenBaseUrl");
     }
 
     @Override
     protected String apiKey() {
-        return planFlowProperties.getAi().getQwenApiKey();
+        return aiConfigService.value("qwenApiKey");
     }
 
     @Override
@@ -34,6 +32,6 @@ public class QwenClient extends OpenAiCompatibleChatClient {
 
     @Override
     public String modelName() {
-        return planFlowProperties.getAi().getQwenModel();
+        return aiConfigService.value("qwenModel");
     }
 }

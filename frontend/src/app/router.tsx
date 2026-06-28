@@ -19,6 +19,8 @@ import Notifications from '../pages/Notifications'
 import Settings from '../pages/Settings'
 import AdminDashboard from '../pages/Admin/Dashboard'
 import AdminUsers from '../pages/Admin/Users'
+import AdminNotifications from '../pages/Admin/Notifications'
+import AdminAiConfig from '../pages/Admin/AiConfig'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
@@ -96,6 +98,8 @@ export default function AppRouter() {
       <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminLayout /></AdminRoute></ProtectedRoute>}>
         <Route index element={<PageWrapper><AdminDashboard /></PageWrapper>} />
         <Route path="users" element={<PageWrapper><AdminUsers /></PageWrapper>} />
+        <Route path="notifications" element={<PageWrapper><AdminNotifications /></PageWrapper>} />
+        <Route path="ai" element={<PageWrapper><AdminAiConfig /></PageWrapper>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>

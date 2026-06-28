@@ -1,30 +1,28 @@
 package com.planflow.client;
 
-import com.planflow.config.PlanFlowProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import com.planflow.service.AiConfigService;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(prefix = "planflow.ai", name = "provider", havingValue = "openai-compatible")
 public class OpenAiCompatibleAiClient extends OpenAiCompatibleChatClient {
 
-    private final PlanFlowProperties planFlowProperties;
+    private final AiConfigService aiConfigService;
 
-    public OpenAiCompatibleAiClient(PlanFlowProperties planFlowProperties,
+    public OpenAiCompatibleAiClient(AiConfigService aiConfigService,
                                     AiPromptBuilder aiPromptBuilder,
                                     AiResultParser aiResultParser) {
         super(aiPromptBuilder, aiResultParser);
-        this.planFlowProperties = planFlowProperties;
+        this.aiConfigService = aiConfigService;
     }
 
     @Override
     protected String baseUrl() {
-        return planFlowProperties.getAi().getOpenaiCompatibleBaseUrl();
+        return aiConfigService.value("openaiCompatibleBaseUrl");
     }
 
     @Override
     protected String apiKey() {
-        return planFlowProperties.getAi().getOpenaiCompatibleApiKey();
+        return aiConfigService.value("openaiCompatibleApiKey");
     }
 
     @Override
@@ -34,6 +32,6 @@ public class OpenAiCompatibleAiClient extends OpenAiCompatibleChatClient {
 
     @Override
     public String modelName() {
-        return planFlowProperties.getAi().getOpenaiCompatibleModel();
+        return aiConfigService.value("openaiCompatibleModel");
     }
 }

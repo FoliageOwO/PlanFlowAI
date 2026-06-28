@@ -55,3 +55,9 @@ planflow:
     openai-compatible-model: ${OPENAI_COMPATIBLE_MODEL:}
   upload:
     dir: ${UPLOAD_DIR:uploads}
+  notification:
+    email-enabled: ${EMAIL_NOTIFICATION_ENABLED:false}
+    email-provider: ${EMAIL_NOTIFICATION_PROVIDER:smtp}
+    email-from: ${EMAIL_NOTIFICATION_FROM:}
+    sms-enabled: ${SMS_NOTIFICATION_ENABLED:false}
+    sms-provider: ${SMS_NOTIFICATION_PROVIDER:aliyun}

@@ -12,6 +12,7 @@ public class PlanFlowProperties {
     private Ocr ocr = new Ocr();
     private Ai ai = new Ai();
     private Upload upload = new Upload();
+    private Notification notification = new Notification();
 
     @Data
     public static class Ocr {
@@ -36,5 +37,14 @@ public class PlanFlowProperties {
     @Data
     public static class Upload {
         private String dir = "uploads";
+    }
+
+    @Data
+    public static class Notification {
+        private boolean emailEnabled = false;
+        private String emailProvider = "smtp";
+        private String emailFrom = "";
+        private boolean smsEnabled = false;
+        private String smsProvider = "aliyun";
     }
 }

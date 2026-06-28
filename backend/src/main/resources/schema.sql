@@ -30,6 +30,10 @@ CREATE TABLE IF NOT EXISTS `user_setting` (
     `enable_in_app_notification` TINYINT NOT NULL DEFAULT 1 COMMENT '启用应用内通知',
     `enable_local_notification` TINYINT NOT NULL DEFAULT 0 COMMENT '启用本地通知',
     `enable_browser_notification` TINYINT NOT NULL DEFAULT 0 COMMENT '启用浏览器通知',
+    `enable_email_notification` TINYINT NOT NULL DEFAULT 0 COMMENT '启用邮件通知',
+    `enable_sms_notification` TINYINT NOT NULL DEFAULT 0 COMMENT '启用短信通知',
+    `notification_email` VARCHAR(255) DEFAULT NULL COMMENT '通知接收邮箱',
+    `notification_phone` VARCHAR(50) DEFAULT NULL COMMENT '通知接收手机号',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -180,7 +184,7 @@ CREATE TABLE IF NOT EXISTS `reminder_rule` (
     `title` VARCHAR(255) NOT NULL COMMENT '提醒标题',
     `content` TEXT DEFAULT NULL COMMENT '提醒内容',
     `remind_at` DATETIME NOT NULL COMMENT '提醒时间',
-    `channel` VARCHAR(20) NOT NULL DEFAULT 'IN_APP' COMMENT '提醒渠道 IN_APP/LOCAL_APP/BROWSER/EMAIL',
+    `channel` VARCHAR(20) NOT NULL DEFAULT 'IN_APP' COMMENT '提醒渠道 IN_APP/LOCAL_APP/BROWSER/EMAIL/SMS',
     `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '状态 PENDING/SENT/FAILED/CANCELLED',
     `local_notification_id` VARCHAR(255) DEFAULT NULL COMMENT '本地通知ID',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -235,6 +239,18 @@ CREATE TABLE IF NOT EXISTS `device_sync_record` (
     KEY `idx_last_sync_at` (`last_sync_at`),
     CONSTRAINT `fk_device_sync_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='设备同步记录表';
+
+-- 12. 系统配置表
+CREATE TABLE IF NOT EXISTS `system_config` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `config_key` VARCHAR(100) NOT NULL COMMENT '配置键',
+    `config_value` TEXT DEFAULT NULL COMMENT '配置值',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '配置说明',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_config_key` (`config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
 
 -- ============================================================
 -- Seed Data: 默认账号

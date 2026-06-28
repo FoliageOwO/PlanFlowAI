@@ -570,6 +570,7 @@ export default function TaskDetail() {
                     <SelectItem value="LOCAL_APP">本地通知</SelectItem>
                     <SelectItem value="BROWSER">浏览器通知</SelectItem>
                     <SelectItem value="EMAIL">邮件</SelectItem>
+                    <SelectItem value="SMS">短信</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

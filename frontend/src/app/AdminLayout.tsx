@@ -8,12 +8,15 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu'
 import {
-  LayoutDashboard, Users, ArrowLeft, LogOut, BarChart3, User,
+  LayoutDashboard, Users, ArrowLeft, LogOut, BarChart3, Bell,
+  Cpu,
 } from 'lucide-react'
 
 const adminNavItems = [
   { key: '/admin', icon: BarChart3, label: '系统状态' },
   { key: '/admin/users', icon: Users, label: '用户管理' },
+  { key: '/admin/ai', icon: Cpu, label: 'AI 配置' },
+  { key: '/admin/notifications', icon: Bell, label: '通知配置' },
 ]
 
 export default function AdminLayout() {
