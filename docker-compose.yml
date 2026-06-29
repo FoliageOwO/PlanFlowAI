@@ -25,6 +25,8 @@ services:
       - DB_HOST=mysql
       - DB_PASSWORD=${DB_PASSWORD:-planflow123}
       - JWT_SECRET=${JWT_SECRET:-default-dev-secret-change-in-production}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400000}
+      - JWT_REMEMBER_EXPIRATION=${JWT_REMEMBER_EXPIRATION:-2592000000}
       - AI_PROVIDER=${AI_PROVIDER:-deepseek}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}

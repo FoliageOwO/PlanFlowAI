@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
+import { Checkbox } from '../../components/ui/checkbox'
 import { Card, CardContent } from '../../components/ui/card'
 import { mockApi, isMockMode } from '../../services/mockData'
 import http from '../../services/api'
@@ -15,7 +16,17 @@ export default function Login() {
   const [loading, setLoading] = React.useState(false)
   const [username, setUsername] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [rememberMe, setRememberMe] = React.useState(true)
   const [error, setError] = React.useState('')
+
+  const getLoginErrorMessage = (err: any) => {
+    if (err?.response?.data?.message) return err.response.data.message
+    if (err?.response?.status === 403) return '请求被拒绝，请检查服务端跨域或登录权限配置'
+    if (err?.response?.status >= 500) return '服务器异常，请稍后重试'
+    if (err?.code === 'ECONNABORTED') return '登录请求超时，请检查网络'
+    if (err?.request) return '无法连接服务器，请检查网络或服务状态'
+    return '登录失败，请重试'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +38,7 @@ export default function Login() {
     setLoading(true)
     try {
       let role: string = 'USER'
-      const values = { username, password }
+      const values = { username, password, rememberMe }
       if (isMockMode()) {
         const res = await mockApi.login(values)
         if (res.code !== 0) { setError(res.message); return }
@@ -35,12 +46,20 @@ export default function Login() {
         login(res.data.user, res.data.token)
       } else {
         const res: any = await http.post('/auth/login', values)
+        if (res?.code !== 200 && res?.code !== 0) {
+          setError(res?.message || '用户名或密码错误')
+          return
+        }
+        if (!res?.data?.user || !res?.data?.token) {
+          setError('登录响应异常，请检查服务端状态')
+          return
+        }
         role = res.data.user.role
         login(res.data.user, res.data.token)
       }
       navigate(role === 'ADMIN' ? '/admin' : '/', { replace: true })
     } catch (err: any) {
-      setError(err?.response?.data?.message || '登录失败，请重试')
+      setError(getLoginErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -88,6 +107,14 @@ export default function Login() {
                 />
               </div>
             </div>
+
+            <label className="flex items-center gap-2 text-sm text-zinc-600">
+              <Checkbox
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <span>保持登录</span>
+            </label>
 
             {error && (
               <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>

@@ -11,4 +11,5 @@ public class JwtConfig {
 
     private String secret;
     private long expiration = 86400000L;
+    private long rememberExpiration = 2592000000L;
 }

@@ -69,15 +69,15 @@ export default function AppLayout() {
     const token = localStorage.getItem('auth-token')
     if (!token) return
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
+    const wsBase = import.meta.env.VITE_WS_BASE
+      || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
     let ws: WebSocket | null = null
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
     let closedByEffect = false
     let retry = 0
 
     const connect = () => {
-      ws = new WebSocket(`${protocol}//${host}/ws/notifications?token=${encodeURIComponent(token)}`)
+      ws = new WebSocket(`${wsBase}/ws/notifications?token=${encodeURIComponent(token)}`)
 
       ws.onopen = () => { retry = 0 }
       ws.onmessage = (event) => {

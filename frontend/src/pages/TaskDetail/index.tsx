@@ -316,11 +316,11 @@ export default function TaskDetail() {
       {/* Header Card */}
       <Card className="mb-4 border-slate-100">
         <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <h3 className="text-xl font-bold text-slate-900">{task.title}</h3>
-                <Badge variant={stCfg.variant} className="text-xs">{stCfg.label}</Badge>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap mb-2">
+                <h3 className="text-xl font-bold leading-snug text-slate-900 break-words">{task.title}</h3>
+                <Badge variant={stCfg.variant} className="w-fit shrink-0 text-xs">{stCfg.label}</Badge>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant={priCfg.variant} className="text-xs">{priCfg.label}优先级</Badge>
@@ -332,11 +332,11 @@ export default function TaskDetail() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={openEdit}><Edit className="w-4 h-4 mr-1" /> 编辑</Button>
+            <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={openEdit}><Edit className="w-4 h-4 mr-1" /> 编辑</Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50"><Trash2 className="w-4 h-4 mr-1" /> 删除</Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-red-500 border-red-200 hover:bg-red-50 sm:flex-none"><Trash2 className="w-4 h-4 mr-1" /> 删除</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader><AlertDialogTitle>确认删除</AlertDialogTitle>

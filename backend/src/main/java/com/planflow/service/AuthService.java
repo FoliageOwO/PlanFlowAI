@@ -55,7 +55,9 @@ public class AuthService {
             throw new BadCredentialsException("账户已被禁用");
         }
 
-        return jwtTokenProvider.generateToken(user.getUsername());
+        return Boolean.TRUE.equals(request.getRememberMe())
+                ? jwtTokenProvider.generateRememberToken(user.getUsername())
+                : jwtTokenProvider.generateToken(user.getUsername());
     }
 
     public User getCurrentUser(String username) {
