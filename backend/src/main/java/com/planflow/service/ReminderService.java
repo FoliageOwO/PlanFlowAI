@@ -89,8 +89,7 @@ public class ReminderService {
                 .eq(ReminderRule::getUserId, userId)
                 .eq(ReminderRule::getStatus, "PENDING")
                 .eq(ReminderRule::getChannel, "LOCAL_APP")
-                .isNull(ReminderRule::getLocalNotificationId)
-                .ge(ReminderRule::getRemindAt, LocalDateTime.now())
+                .ge(ReminderRule::getRemindAt, LocalDateTime.now().minusMinutes(30))
                 .orderByAsc(ReminderRule::getRemindAt));
     }
 
@@ -107,6 +106,9 @@ public class ReminderService {
             ReminderRule rule = reminderRuleMapper.selectById(reminderId);
             if (rule != null && rule.getUserId().equals(userId)) {
                 rule.setLocalNotificationId(localNotificationId);
+                if (rule.getRemindAt() != null && !rule.getRemindAt().isAfter(LocalDateTime.now())) {
+                    rule.setStatus("SENT");
+                }
                 rule.setUpdatedAt(LocalDateTime.now());
                 reminderRuleMapper.updateById(rule);
             }

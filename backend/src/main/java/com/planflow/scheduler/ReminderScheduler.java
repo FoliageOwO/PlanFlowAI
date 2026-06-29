@@ -41,6 +41,18 @@ public class ReminderScheduler {
                 notification.setReadStatus("UNREAD");
                 notification.setCreatedAt(LocalDateTime.now());
 
+                if (isLocalAppReminder(rule)) {
+                    if (rule.getLocalNotificationId() == null
+                            && rule.getRemindAt() != null
+                            && !rule.getRemindAt().isBefore(LocalDateTime.now().minusMinutes(30))) {
+                        channelManager.dispatch(notification);
+                        log.info("Pushed due local app reminder: id={}", rule.getId());
+                        continue;
+                    }
+                    reminderService.markSentBySystem(rule.getId());
+                    continue;
+                }
+
                 if (shouldPersistInAppNotification(rule)) {
                     notificationMapper.insert(notification);
                 }
@@ -64,5 +76,9 @@ public class ReminderScheduler {
     private boolean shouldPersistInAppNotification(ReminderRule rule) {
         if (rule.getChannel() == null) return true;
         return "IN_APP".equalsIgnoreCase(rule.getChannel()) || "BROWSER".equalsIgnoreCase(rule.getChannel());
+    }
+
+    private boolean isLocalAppReminder(ReminderRule rule) {
+        return rule.getChannel() != null && "LOCAL_APP".equalsIgnoreCase(rule.getChannel());
     }
 }

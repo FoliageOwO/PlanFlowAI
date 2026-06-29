@@ -255,6 +255,7 @@ export default function TaskDetail() {
   const [savingEdit, setSavingEdit] = React.useState(false)
   const [reminderOpen, setReminderOpen] = React.useState(false)
   const [editingReminder, setEditingReminder] = React.useState<ReminderItem | null>(null)
+  const [editingReminderGroup, setEditingReminderGroup] = React.useState<ReminderGroup | null>(null)
   const [savingReminder, setSavingReminder] = React.useState(false)
   const [deletingReminderId, setDeletingReminderId] = React.useState<string | null>(null)
   const [reminderForm, setReminderForm] = React.useState({
@@ -293,6 +294,7 @@ export default function TaskDetail() {
       ? dayjs(task.deadline).subtract(30, 'minute')
       : dayjs().add(1, 'hour')
     setEditingReminder(null)
+    setEditingReminderGroup(null)
     setReminderForm({
       title: task ? `${task.title} 提醒` : '任务提醒',
       content: '',
@@ -304,11 +306,25 @@ export default function TaskDetail() {
 
   const openEditReminder = (reminder: ReminderItem) => {
     setEditingReminder(reminder)
+    setEditingReminderGroup(null)
     setReminderForm({
       title: reminder.title || (task ? `${task.title} 提醒` : '任务提醒'),
       content: reminder.content || '',
       remindAt: reminder.time ? dayjs(reminder.time).format('YYYY-MM-DDTHH:mm') : '',
       channel: reminder.channel || 'IN_APP',
+    })
+    setReminderOpen(true)
+  }
+
+  const openEditReminderGroup = (group: ReminderGroup) => {
+    const firstReminder = group.reminders[0]
+    setEditingReminder(firstReminder)
+    setEditingReminderGroup(group)
+    setReminderForm({
+      title: group.title,
+      content: group.content,
+      remindAt: group.time ? dayjs(group.time).format('YYYY-MM-DDTHH:mm') : '',
+      channel: firstReminder?.channel || 'IN_APP',
     })
     setReminderOpen(true)
   }
@@ -326,11 +342,16 @@ export default function TaskDetail() {
         status: 'PENDING',
       }
       if (!isMockMode()) {
-        if (editingReminder) await http.patch(`/reminders/${editingReminder.id}`, payload)
+        if (editingReminderGroup) {
+          await Promise.all(editingReminderGroup.reminders.map(reminder =>
+            http.patch(`/reminders/${reminder.id}`, { ...payload, channel: reminder.channel })
+          ))
+        } else if (editingReminder) await http.patch(`/reminders/${editingReminder.id}`, payload)
         else await http.post('/reminders', payload)
       }
       setReminderOpen(false)
       setEditingReminder(null)
+      setEditingReminderGroup(null)
       fetchTask()
     } catch { } finally { setSavingReminder(false) }
   }
@@ -540,7 +561,6 @@ export default function TaskDetail() {
                 <div className="space-y-2">
                   {reminderGroups.map(group => {
                     const status = getReminderStatusLabel(group.statuses)
-                    const firstReminder = group.reminders[0]
                     return (
                     <div key={group.key} className="flex items-start gap-2 text-sm p-2.5 rounded-md bg-orange-50/70 border border-orange-100">
                       <Bell className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
@@ -555,7 +575,7 @@ export default function TaskDetail() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEditReminder(firstReminder)} title="编辑提醒">
+                        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEditReminderGroup(group)} title="编辑提醒">
                           <Edit className="w-3.5 h-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="w-7 h-7 text-red-500 hover:bg-red-50" onClick={() => deleteReminderGroup(group)} loading={deletingReminderId === group.key} title="删除提醒">
@@ -646,17 +666,25 @@ export default function TaskDetail() {
               </div>
               <div className="space-y-1.5">
                 <Label>渠道</Label>
-                <Select value={reminderForm.channel} onValueChange={v => setReminderForm(p => ({ ...p, channel: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="IN_APP">站内通知</SelectItem>
-                    <SelectItem value="LOCAL_APP">本地通知</SelectItem>
-                    <SelectItem value="BROWSER">浏览器通知</SelectItem>
-                    <SelectItem value="EMAIL">邮件</SelectItem>
-                    <SelectItem value="SMS">短信</SelectItem>
-                    <SelectItem value="QQ">QQ</SelectItem>
-                  </SelectContent>
-                </Select>
+                {editingReminderGroup && editingReminderGroup.channels.length > 1 ? (
+                  <div className="min-h-10 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-2 flex flex-wrap gap-1.5">
+                    {editingReminderGroup.channels.map(channel => (
+                      <Badge key={channel} variant="secondary" className="text-[10px]">{channelLabel[channel] || channel}</Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <Select value={reminderForm.channel} onValueChange={v => setReminderForm(p => ({ ...p, channel: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IN_APP">站内通知</SelectItem>
+                      <SelectItem value="LOCAL_APP">本地通知</SelectItem>
+                      <SelectItem value="BROWSER">浏览器通知</SelectItem>
+                      <SelectItem value="EMAIL">邮件</SelectItem>
+                      <SelectItem value="SMS">短信</SelectItem>
+                      <SelectItem value="QQ">QQ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
             <Button className="w-full" onClick={saveReminder} loading={savingReminder} disabled={!reminderForm.title.trim() || !reminderForm.remindAt}>

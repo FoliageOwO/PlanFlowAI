@@ -83,6 +83,13 @@ export default function AppLayout() {
       ws.onmessage = (event) => {
         try {
           const notif = JSON.parse(event.data)
+          if (notif.channel === 'LOCAL_APP') {
+            import('../services/localNotificationService')
+              .then(({ notifyLocalReminderNow }) => notifyLocalReminderNow(notif))
+              .catch((error) => console.error('[local-notification] websocket trigger failed', error))
+            return
+          }
+
           setUnreadCount(prev => prev + 1)
 
           if (window.location.pathname !== '/notifications') {

@@ -31,12 +31,8 @@ public class WebSocketNotificationChannel implements NotificationChannel {
 
     @Override
     public boolean isEnabled(Long userId) {
-        UserSetting setting = userSettingMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserSetting>()
-                        .eq(UserSetting::getUserId, userId));
-        return setting == null
-                || setting.getEnableInAppNotification() == null
-                || setting.getEnableInAppNotification() == 1;
+        UserSetting setting = getSetting(userId);
+        return isInAppEnabled(setting) || isLocalAppEnabled(setting);
     }
 
     @Override
@@ -45,12 +41,20 @@ public class WebSocketNotificationChannel implements NotificationChannel {
     @Override
     public void send(Notification notification) {
         try {
-            if (!shouldPush(notification)) return;
+            UserSetting setting = getSetting(notification.getUserId());
+            ReminderRule rule = notification.getReminderRuleId() == null
+                    ? null
+                    : reminderRuleMapper.selectById(notification.getReminderRuleId());
+            if (!shouldPush(rule, setting)) return;
             User user = userMapper.selectById(notification.getUserId());
             if (user == null) return;
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("id", notification.getId());
+            payload.put("reminderRuleId", notification.getReminderRuleId());
+            payload.put("channel", rule != null ? rule.getChannel() : null);
+            payload.put("remindAt", rule != null && rule.getRemindAt() != null
+                    ? rule.getRemindAt().toString() : null);
             payload.put("type", notification.getType());
             payload.put("title", notification.getTitle());
             payload.put("content", notification.getContent());
@@ -66,10 +70,28 @@ public class WebSocketNotificationChannel implements NotificationChannel {
         }
     }
 
-    private boolean shouldPush(Notification notification) {
-        if (notification.getReminderRuleId() == null) return true;
-        ReminderRule rule = reminderRuleMapper.selectById(notification.getReminderRuleId());
-        if (rule == null || rule.getChannel() == null) return true;
-        return "IN_APP".equalsIgnoreCase(rule.getChannel()) || "BROWSER".equalsIgnoreCase(rule.getChannel());
+    private boolean shouldPush(ReminderRule rule, UserSetting setting) {
+        if (rule == null || rule.getChannel() == null) return isInAppEnabled(setting);
+        if ("LOCAL_APP".equalsIgnoreCase(rule.getChannel())) return isLocalAppEnabled(setting);
+        return ("IN_APP".equalsIgnoreCase(rule.getChannel()) || "BROWSER".equalsIgnoreCase(rule.getChannel()))
+                && isInAppEnabled(setting);
+    }
+
+    private UserSetting getSetting(Long userId) {
+        return userSettingMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserSetting>()
+                        .eq(UserSetting::getUserId, userId));
+    }
+
+    private boolean isInAppEnabled(UserSetting setting) {
+        return setting == null
+                || setting.getEnableInAppNotification() == null
+                || setting.getEnableInAppNotification() == 1;
+    }
+
+    private boolean isLocalAppEnabled(UserSetting setting) {
+        return setting != null
+                && setting.getEnableLocalNotification() != null
+                && setting.getEnableLocalNotification() == 1;
     }
 }
