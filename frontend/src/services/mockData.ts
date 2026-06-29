@@ -77,7 +77,7 @@ export interface JobItem {
 
 export interface NotificationItem {
   id: string
-  type: 'TASK_DEADLINE' | 'SYSTEM' | 'REMINDER' | 'SHARE'
+  type: 'TASK_DEADLINE' | 'DEADLINE_SOON' | 'SYSTEM' | 'PARSE_COMPLETED' | 'PARSE_FAILED' | 'REMINDER' | 'SHARE'
   title: string
   content: string
   read: boolean

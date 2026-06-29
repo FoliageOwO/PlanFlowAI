@@ -88,7 +88,7 @@ public class ReminderService {
         return reminderRuleMapper.selectList(new LambdaQueryWrapper<ReminderRule>()
                 .eq(ReminderRule::getUserId, userId)
                 .eq(ReminderRule::getStatus, "PENDING")
-                .in(ReminderRule::getChannel, "LOCAL_APP", "IN_APP")
+                .eq(ReminderRule::getChannel, "LOCAL_APP")
                 .isNull(ReminderRule::getLocalNotificationId)
                 .ge(ReminderRule::getRemindAt, LocalDateTime.now())
                 .orderByAsc(ReminderRule::getRemindAt));

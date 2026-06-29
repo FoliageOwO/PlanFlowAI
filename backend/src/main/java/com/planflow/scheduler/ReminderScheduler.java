@@ -31,22 +31,22 @@ public class ReminderScheduler {
 
         for (ReminderRule rule : dueReminders) {
             try {
-                // 1. 持久化通知
                 Notification notification = new Notification();
                 notification.setUserId(rule.getUserId());
                 notification.setTaskId(rule.getTaskId());
                 notification.setReminderRuleId(rule.getId());
                 notification.setTitle(rule.getTitle());
                 notification.setContent(rule.getContent());
-                notification.setType("DEADLINE_SOON");
+                notification.setType("REMINDER");
                 notification.setReadStatus("UNREAD");
                 notification.setCreatedAt(LocalDateTime.now());
-                notificationMapper.insert(notification);
 
-                // 2. 通过通知渠道分发（WebSocket 实时推送等）
+                if (shouldPersistInAppNotification(rule)) {
+                    notificationMapper.insert(notification);
+                }
+
                 channelManager.dispatch(notification);
 
-                // 3. 标记提醒已发送
                 reminderService.markSentBySystem(rule.getId());
 
                 log.info("Processed reminder: id={}, channels dispatched", rule.getId());
@@ -59,5 +59,10 @@ public class ReminderScheduler {
                 }
             }
         }
+    }
+
+    private boolean shouldPersistInAppNotification(ReminderRule rule) {
+        if (rule.getChannel() == null) return true;
+        return "IN_APP".equalsIgnoreCase(rule.getChannel()) || "BROWSER".equalsIgnoreCase(rule.getChannel());
     }
 }

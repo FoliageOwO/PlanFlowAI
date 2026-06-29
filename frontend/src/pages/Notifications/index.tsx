@@ -19,7 +19,10 @@ dayjs.locale('zh-cn')
 
 const typeConfig: Record<string, { icon: React.ReactNode; bg: string; label: string }> = {
   TASK_DEADLINE: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, bg: 'bg-red-50', label: '任务截止' },
+  DEADLINE_SOON: { icon: <Bell className="w-4 h-4 text-orange-500" />, bg: 'bg-orange-50', label: '提醒' },
   SYSTEM: { icon: <Info className="w-4 h-4 text-zinc-600" />, bg: 'bg-zinc-50', label: '系统通知' },
+  PARSE_COMPLETED: { icon: <Info className="w-4 h-4 text-emerald-600" />, bg: 'bg-emerald-50', label: '解析完成' },
+  PARSE_FAILED: { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, bg: 'bg-red-50', label: '解析失败' },
   REMINDER: { icon: <Bell className="w-4 h-4 text-orange-500" />, bg: 'bg-orange-50', label: '提醒' },
   SHARE: { icon: <Share2 className="w-4 h-4 text-emerald-500" />, bg: 'bg-emerald-50', label: '分享' },
 }
@@ -109,6 +112,7 @@ export default function NotificationsPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-sm font-medium ${item.read ? 'text-slate-500' : 'text-slate-900'}`}>{item.title}</span>
+            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-auto">{cfg.label}</Badge>
             {!item.read && <Badge variant="destructive" className="text-[10px] px-1 py-0 h-auto">未读</Badge>}
           </div>
           <p className={`text-xs mt-0.5 ${item.read ? 'text-slate-400' : 'text-slate-600'}`}>{item.content}</p>

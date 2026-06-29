@@ -45,6 +45,23 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'succes
 const nextStatus: Record<string, TaskItem['status']> = { TODO: 'DOING', DOING: 'DONE', DONE: 'DONE', CANCELLED: 'TODO' }
 const channelLabel: Record<string, string> = { IN_APP: '站内通知', LOCAL_APP: '本地通知', BROWSER: '浏览器通知', EMAIL: '邮件', SMS: '短信', QQ: 'QQ' }
 const sourceIcons: Record<string, React.ReactNode> = { TEXT: <FileText className="w-4 h-4" />, IMAGE: <Image className="w-4 h-4" />, FILE: <File className="w-4 h-4" />, AUDIO: <File className="w-4 h-4" /> }
+const reminderStatusConfig: Record<string, { label: string; variant: 'warning' | 'success' | 'destructive' | 'secondary' }> = {
+  PENDING: { label: '待发送', variant: 'warning' },
+  SENT: { label: '已发送', variant: 'success' },
+  FAILED: { label: '发送失败', variant: 'destructive' },
+  CANCELLED: { label: '已取消', variant: 'secondary' },
+}
+const channelOrder = ['IN_APP', 'LOCAL_APP', 'BROWSER', 'EMAIL', 'SMS', 'QQ']
+
+type ReminderGroup = {
+  key: string
+  title: string
+  content: string
+  time: string
+  channels: string[]
+  statuses: string[]
+  reminders: ReminderItem[]
+}
 
 function formatEstimatedDuration(task: TaskItem): string {
   const minutes = task.estimatedMinutes ?? Math.round((task.estimatedHours || 0) * 60)
@@ -68,6 +85,55 @@ function formatSourceEvidence(value?: string): string {
 
 function shouldCollapseEvidence(value: string): boolean {
   return value.length > 220 || value.split(/\r?\n/).length > 4
+}
+
+function formatOverdueText(deadline?: string): string {
+  if (!deadline) return ''
+  const minutes = dayjs().diff(dayjs(deadline), 'minute')
+  if (minutes <= 0) return ''
+  if (minutes < 2) return '刚刚逾期'
+  if (minutes < 60) return `已逾期 ${minutes} 分钟`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `已逾期 ${hours} 小时`
+  const days = Math.floor(hours / 24)
+  return `已逾期 ${days} 天`
+}
+
+function getReminderStatusLabel(statuses: string[]): { label: string; variant: 'warning' | 'success' | 'destructive' | 'secondary' } {
+  const unique = [...new Set(statuses.filter(Boolean))]
+  if (unique.length === 0) return reminderStatusConfig.PENDING
+  if (unique.length === 1) return reminderStatusConfig[unique[0]] || { label: unique[0], variant: 'secondary' }
+  if (unique.includes('FAILED')) return { label: '部分失败', variant: 'destructive' }
+  if (unique.includes('PENDING')) return { label: '部分待发送', variant: 'warning' }
+  return { label: '多状态', variant: 'secondary' }
+}
+
+function groupReminders(reminders: ReminderItem[]): ReminderGroup[] {
+  const map = new Map<string, ReminderGroup>()
+  for (const reminder of reminders) {
+    const key = [
+      reminder.title || '任务提醒',
+      reminder.content || '',
+      dayjs(reminder.time).format('YYYY-MM-DD HH:mm'),
+    ].join('|')
+    const group = map.get(key) || {
+      key,
+      title: reminder.title || '任务提醒',
+      content: reminder.content || '',
+      time: reminder.time,
+      channels: [],
+      statuses: [],
+      reminders: [],
+    }
+    group.reminders.push(reminder)
+    if (reminder.channel && !group.channels.includes(reminder.channel)) group.channels.push(reminder.channel)
+    if (reminder.status && !group.statuses.includes(reminder.status)) group.statuses.push(reminder.status)
+    map.set(key, group)
+  }
+  return [...map.values()].map(group => ({
+    ...group,
+    channels: group.channels.sort((a, b) => channelOrder.indexOf(a) - channelOrder.indexOf(b)),
+  }))
 }
 
 export default function TaskDetail() {
@@ -277,6 +343,16 @@ export default function TaskDetail() {
     } catch { } finally { setDeletingReminderId(null) }
   }
 
+  const deleteReminderGroup = async (group: ReminderGroup) => {
+    setDeletingReminderId(group.key)
+    try {
+      if (!isMockMode()) {
+        await Promise.all(group.reminders.map(reminder => http.delete(`/reminders/${reminder.id}`)))
+      }
+      fetchTask()
+    } catch { } finally { setDeletingReminderId(null) }
+  }
+
   const handleDelete = async () => {
     try {
       if (isMockMode()) await mockApi.deleteTask(id!)
@@ -299,10 +375,12 @@ export default function TaskDetail() {
   )
 
   const isOverdue = task.deadline ? dayjs(task.deadline).isBefore(dayjs()) && task.status !== 'DONE' : false
+  const overdueText = isOverdue ? formatOverdueText(task.deadline) : ''
   const checkedCount = checklist.filter(c => c.done).length
   const priCfg = priorityConfig[task.priority]
   const stCfg = statusConfig[task.status]
   const ns = nextStatus[task.status]
+  const reminderGroups = groupReminders(task.reminders || [])
   const sourceEvidence = formatSourceEvidence(task.sourceEvidence)
   const collapseEvidence = shouldCollapseEvidence(sourceEvidence)
   const displayedEvidence = collapseEvidence && !sourceEvidenceExpanded
@@ -328,7 +406,7 @@ export default function TaskDetail() {
                 <span className={`text-sm flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-slate-500'}`}>
                   <Calendar className="w-3.5 h-3.5" />
                   {task.deadline ? dayjs(task.deadline).format('YYYY-MM-DD HH:mm') : '无截止时间'}
-                  {isOverdue && task.deadline && ` (已逾期 ${Math.abs(dayjs(task.deadline).diff(dayjs(), 'day'))} 天)`}
+                  {overdueText && ` (${overdueText})`}
                 </span>
               </div>
             </div>
@@ -458,29 +536,34 @@ export default function TaskDetail() {
               </div>
             </CardHeader>
             <CardContent>
-              {task.reminders.length > 0 ? (
+              {reminderGroups.length > 0 ? (
                 <div className="space-y-2">
-                  {task.reminders.map(r => (
-                    <div key={r.id} className="flex items-start gap-2 text-sm p-2.5 rounded-md bg-orange-50/70 border border-orange-100">
+                  {reminderGroups.map(group => {
+                    const status = getReminderStatusLabel(group.statuses)
+                    const firstReminder = group.reminders[0]
+                    return (
+                    <div key={group.key} className="flex items-start gap-2 text-sm p-2.5 rounded-md bg-orange-50/70 border border-orange-100">
                       <Bell className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-zinc-900 truncate">{r.title || '任务提醒'}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-mono text-zinc-500">{dayjs(r.time).format('MM-DD HH:mm')}</span>
-                          <Badge variant="secondary" className="text-[10px] px-1 h-auto">{channelLabel[r.channel] || r.channel}</Badge>
-                          {r.status && <Badge variant={r.status === 'PENDING' ? 'warning' : 'secondary'} className="text-[10px] px-1 h-auto">{r.status}</Badge>}
+                        <p className="text-xs font-medium text-zinc-900 truncate">{group.title}</p>
+                        <p className="mt-1 text-xs font-mono text-zinc-500">{dayjs(group.time).format('MM-DD HH:mm')}</p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {group.channels.map(channel => (
+                            <Badge key={channel} variant="secondary" className="text-[10px] px-1 h-auto">{channelLabel[channel] || channel}</Badge>
+                          ))}
+                          <Badge variant={status.variant} className="text-[10px] px-1 h-auto">{status.label}</Badge>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEditReminder(r)} title="编辑提醒">
+                        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEditReminder(firstReminder)} title="编辑提醒">
                           <Edit className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="w-7 h-7 text-red-500 hover:bg-red-50" onClick={() => deleteReminder(r.id)} loading={deletingReminderId === r.id} title="删除提醒">
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-red-500 hover:bg-red-50" onClick={() => deleteReminderGroup(group)} loading={deletingReminderId === group.key} title="删除提醒">
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               ) : <EmptyState description="暂无提醒" actionText="新增提醒" onAction={openAddReminder} />}
             </CardContent>
