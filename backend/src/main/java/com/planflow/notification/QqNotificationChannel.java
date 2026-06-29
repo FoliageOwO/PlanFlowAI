@@ -102,8 +102,8 @@ public class QqNotificationChannel implements NotificationChannel {
 
         if (task != null) {
             message.append("\n关联任务：").append(valueOrDefault(task.getTitle(), "未命名任务")).append("\n");
-            message.append("优先级：").append(valueOrDefault(task.getPriority(), "未设置")).append("\n");
-            message.append("状态：").append(valueOrDefault(task.getStatus(), "未设置")).append("\n");
+            message.append("优先级：").append(formatPriority(task.getPriority())).append("\n");
+            message.append("状态：").append(formatStatus(task.getStatus())).append("\n");
             if (task.getDeadline() != null) {
                 message.append("截止时间：").append(formatTime(task.getDeadline())).append("\n");
             }
@@ -141,5 +141,27 @@ public class QqNotificationChannel implements NotificationChannel {
 
     private String valueOrDefault(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private String formatPriority(String priority) {
+        if (priority == null || priority.isBlank()) return "未设置";
+        return switch (priority.trim().toUpperCase()) {
+            case "LOW" -> "低";
+            case "MEDIUM" -> "中";
+            case "HIGH" -> "高";
+            case "URGENT" -> "紧急";
+            default -> priority.trim();
+        };
+    }
+
+    private String formatStatus(String status) {
+        if (status == null || status.isBlank()) return "未设置";
+        return switch (status.trim().toUpperCase()) {
+            case "TODO" -> "待处理";
+            case "DOING" -> "进行中";
+            case "DONE" -> "已完成";
+            case "CANCELLED" -> "已取消";
+            default -> status.trim();
+        };
     }
 }
