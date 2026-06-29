@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 @Slf4j
 @Service
@@ -26,6 +28,14 @@ public class TextExtractService {
             case "DOCX" -> {
                 log.info("Extracting text from DOCX: {}", file.getName());
                 yield cleanText(docxExtractService.extract(file));
+            }
+            case "TXT" -> {
+                log.info("Extracting text from TXT: {}", file.getName());
+                try {
+                    yield cleanText(Files.readString(file.toPath(), StandardCharsets.UTF_8));
+                } catch (Exception e) {
+                    throw new RuntimeException("TXT text extraction failed: " + e.getMessage(), e);
+                }
             }
             default -> throw new IllegalArgumentException("Unsupported source type for extraction: " + sourceType);
         };

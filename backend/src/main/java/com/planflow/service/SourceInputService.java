@@ -39,13 +39,12 @@ import java.util.Set;
 public class SourceInputService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList(
-            "jpg", "jpeg", "png", "gif", "bmp", "webp", "pdf", "docx", "doc", "txt"
+            "jpg", "jpeg", "png", "gif", "bmp", "webp", "pdf", "docx", "txt"
     ));
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>(Arrays.asList(
             "image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp",
             "application/pdf",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/msword",
             "text/plain"
     ));
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB

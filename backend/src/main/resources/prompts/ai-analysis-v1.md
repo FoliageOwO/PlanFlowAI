@@ -49,6 +49,7 @@ Classification rules:
 9. If an original date is already in the past, keep the original event date for events. Do not silently move real events to the future.
 10. Use Chinese for user-visible fields when the input is Chinese.
 11. estimatedMinutes must represent real time occupied by the task/event. If start and end times are known, use their duration. If early arrival, preparation window, setup, or travel buffer is explicitly required, include that time too. Example: 16:00-17:40 with arrival 20 minutes early is 120 minutes.
+12. estimatedMinutes must always be a positive integer. Use 5 for quick reminder-only tasks, 30 for simple tasks with unclear duration, and a realistic larger value when the source states or implies duration.
 
 Few-shot guidance:
 - Exam notice:

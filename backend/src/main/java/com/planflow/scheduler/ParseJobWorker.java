@@ -129,7 +129,7 @@ public class ParseJobWorker {
                     throw new RuntimeException("图片文字识别失败: " + e.getMessage(), e);
                 }
             }
-            case "PDF", "DOCX" -> {
+            case "PDF", "DOCX", "TXT" -> {
                 File docFile = new File(sourceInput.getFilePath());
                 if (!docFile.exists()) {
                     throw new RuntimeException("文件不存在: " + sourceInput.getFilePath());

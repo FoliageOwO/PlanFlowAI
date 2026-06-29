@@ -10,8 +10,11 @@ import {
 } from '../components/ui/dropdown-menu'
 import {
   Home, ListTodo, FileText, Clock, Bell,
-  User, LogOut, Settings, LayoutDashboard, X, Plus,
+  User, LogOut, Settings, LayoutDashboard, X, Plus, Download,
 } from 'lucide-react'
+import { isAndroid } from '../services/platformService'
+
+const APP_DOWNLOAD_URL = 'https://dl.planflowai.xyz/latest.apk'
 
 const navItems = [
   { key: '/', icon: Home, label: '首页' },
@@ -28,6 +31,7 @@ export default function AppLayout() {
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [toast, setToast] = React.useState<{ title: string; content?: string; taskId?: string | null } | null>(null)
   const isTaskDetailPage = /^\/tasks\/[^/]+$/.test(location.pathname)
+  const showDownloadApp = !isAndroid()
 
   const loadUnread = React.useCallback(async () => {
     try {
@@ -176,6 +180,16 @@ export default function AppLayout() {
 
         {/* Right side */}
         <div className="flex items-center gap-3">
+          {showDownloadApp && (
+            <a
+              href={APP_DOWNLOAD_URL}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950"
+            >
+              <Download className="h-4 w-4" />
+              下载 App
+            </a>
+          )}
+
           {/* Notification bell */}
           <button
             onClick={() => navigate('/notifications')}
@@ -243,6 +257,15 @@ export default function AppLayout() {
       <div className="md:hidden flex items-center justify-between h-12 px-4 bg-white/95 border-b border-zinc-200 sticky top-0 z-50 backdrop-blur">
         <span className="text-lg font-semibold text-zinc-950">PlanFlowAI</span>
         <div className="flex items-center gap-2">
+          {showDownloadApp && (
+            <a
+              href={APP_DOWNLOAD_URL}
+              aria-label="下载 App"
+              className="p-2 rounded-md text-zinc-400 hover:text-zinc-700 transition-all"
+            >
+              <Download className="w-5 h-5" />
+            </a>
+          )}
           <button
             onClick={() => navigate('/notifications')}
             className="relative p-2 rounded-md text-zinc-400 hover:text-zinc-700 transition-all"

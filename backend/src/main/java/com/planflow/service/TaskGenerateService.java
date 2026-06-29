@@ -55,7 +55,7 @@ public class TaskGenerateService {
                 task.setPriority(taskItem.getPriority() != null ? taskItem.getPriority().toUpperCase() : "MEDIUM");
                 task.setStatus("TODO");
                 task.setDeadline(parseDateTime(taskItem.getDeadline()));
-                task.setEstimatedMinutes(taskItem.getEstimatedMinutes());
+                task.setEstimatedMinutes(normalizeEstimatedMinutes(taskItem.getEstimatedMinutes()));
                 task.setCreatedAt(LocalDateTime.now());
                 task.setUpdatedAt(LocalDateTime.now());
 
@@ -301,6 +301,16 @@ public class TaskGenerateService {
             log.warn("Failed to parse datetime: {}", dateTimeStr);
             return null;
         }
+    }
+
+    private int normalizeEstimatedMinutes(Integer estimatedMinutes) {
+        if (estimatedMinutes == null) {
+            return 30;
+        }
+        if (estimatedMinutes <= 0) {
+            return 5;
+        }
+        return estimatedMinutes;
     }
 
     private List<String> getPreparationChecklist(AiAnalysisResultDTO.TaskItem taskItem) {
