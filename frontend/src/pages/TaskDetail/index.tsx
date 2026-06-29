@@ -451,7 +451,7 @@ export default function TaskDetail() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pb-24 md:pb-4">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-4">
           {/* Description */}

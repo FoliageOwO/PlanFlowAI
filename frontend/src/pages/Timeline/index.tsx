@@ -194,30 +194,34 @@ export default function TimelinePage() {
                     <span className="text-sm text-slate-400 ml-2">{groupEvents.length} 项</span>
                   </div>
                 </div>
-                <div className="space-y-2 ml-12">
+                <div className="space-y-2">
                   {groupEvents.map(evt => {
                     const cfg = typeConfig[evt.type] || typeConfig.EVENT
                     return (
-                      <div key={evt.id}
-                        onClick={() => openEventDetail(evt)}
-                        className="p-4 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-all duration-150 hover:translate-x-1 hover:border-zinc-300 relative cursor-pointer"
-                      >
-                        <div className={`absolute -left-[37px] top-4 w-3 h-3 rounded-full border-2 bg-white ${cfg.border}`} />
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                              <span className="font-medium text-sm text-slate-900">{evt.title}</span>
-                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-auto ${cfg.bg} border-0`}>
-                                {getEventLabel(evt)}
-                              </Badge>
+                      <div key={evt.id} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2">
+                        <div className="flex justify-center pt-4">
+                          <div className={`h-3 w-3 rounded-full border-2 bg-white ${cfg.border}`} />
+                        </div>
+                        <div
+                          onClick={() => openEventDetail(evt)}
+                          className="p-4 bg-white rounded-xl border border-slate-100 hover:shadow-sm transition-colors duration-150 hover:border-zinc-300 cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                                <span className="font-medium text-sm text-slate-900">{evt.title}</span>
+                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-auto ${cfg.bg} border-0`}>
+                                  {getEventLabel(evt)}
+                                </Badge>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {dayjs(evt.time).isValid() ? dayjs(evt.time).format('MM-DD HH:mm') : ''}
+                                {evt.description ? ` — ${evt.description}` : ''}
+                              </span>
                             </div>
-                            <span className="text-xs text-slate-500">
-                              {dayjs(evt.time).isValid() ? dayjs(evt.time).format('MM-DD HH:mm') : ''}
-                              {evt.description ? ` — ${evt.description}` : ''}
-                            </span>
+                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                           </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                         </div>
                       </div>
                     )

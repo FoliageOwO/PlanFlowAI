@@ -10,7 +10,7 @@ import {
 } from '../components/ui/dropdown-menu'
 import {
   Home, ListTodo, FileText, Clock, Bell,
-  User, LogOut, Settings, LayoutDashboard, X,
+  User, LogOut, Settings, LayoutDashboard, X, Plus,
 } from 'lucide-react'
 
 const navItems = [
@@ -27,6 +27,7 @@ export default function AppLayout() {
   const { user, logout } = useAuthStore()
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [toast, setToast] = React.useState<{ title: string; content?: string; taskId?: string | null } | null>(null)
+  const isTaskDetailPage = /^\/tasks\/[^/]+$/.test(location.pathname)
 
   const loadUnread = React.useCallback(async () => {
     try {
@@ -263,7 +264,7 @@ export default function AppLayout() {
       </div>
 
       {/* Main Content */}
-      <main className="px-4 pb-24 md:pb-8 max-w-6xl mx-auto w-full min-h-[calc(100vh-56px)]">
+      <main className={`px-4 ${isTaskDetailPage ? 'pb-0' : 'pb-24'} md:pb-8 max-w-6xl mx-auto w-full min-h-[calc(100vh-56px)]`}>
         <Outlet />
       </main>
 
@@ -295,6 +296,24 @@ export default function AppLayout() {
         {navItems.map(item => {
           const active = isActive(item.key)
           const Icon = item.icon
+          if (item.key === '/input') {
+            return (
+              <button
+                key={item.key}
+                onClick={() => navigate(item.key)}
+                aria-label="输入"
+                className="relative flex min-w-[48px] items-center justify-center"
+              >
+                <span className={`flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition-all ${
+                  active
+                    ? 'bg-zinc-950 text-white shadow-zinc-950/15'
+                    : 'bg-zinc-900 text-white shadow-zinc-900/10 active:scale-95'
+                }`}>
+                  <Plus className="h-5 w-5" strokeWidth={2.4} />
+                </span>
+              </button>
+            )
+          }
           return (
             <button
               key={item.key}

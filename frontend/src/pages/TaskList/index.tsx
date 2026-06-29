@@ -328,11 +328,6 @@ export default function TaskList() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* FAB for mobile */}
-      <Button size="icon" className="fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-lg md:hidden z-50" onClick={() => setModalOpen(true)}>
-        <Plus className="w-6 h-6" />
-      </Button>
-
       {/* Create Dialog */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
